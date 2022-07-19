@@ -4,6 +4,7 @@
 
 #include "RNG.h"
 #include "Bond.h"
+#include "Stock.h"
 #include <mkl.h>
 #include <math.h>
 #include <algorithm>
@@ -20,7 +21,8 @@ public:
 	void bond_init(float bond_par, float bond_c, int bond_m, 
 					float bond_y, float bond_x, int idx);
 
-	void stock_init(float stock_s0, float stock_mu, float stock_var, int stock_t);
+	void stock_init(float stock_s0, float stock_mu, float stock_var, 
+					int stock_t, int stock_x, int idx);
 
 
 	int execute();
@@ -38,6 +40,9 @@ private:
 
 	Bond* bond = NULL;
 	float* bond_rn = NULL;	   // Pointer to the bond's RN sequence
+
+	Stock* stock = NULL;
+	float* stock_rn = NULL;
 
 
 	float* prices; // Pointer to the matrix of each of the product's prices

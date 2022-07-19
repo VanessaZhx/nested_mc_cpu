@@ -15,7 +15,7 @@ public:
     // m - simulation times
     // n - dimention
     int generate_sobol_cpu(float*& data, int m, int n, int seed = 1024, int offset = 1024);
-    int convert_normal(float*& data, int length, float sigma);
+    int convert_normal(float*& data, int length, float sigma = 1);
 };
 
 #endif
