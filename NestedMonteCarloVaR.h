@@ -5,6 +5,7 @@
 #include "RNG.h"
 #include "Bond.h"
 #include "Stock.h"
+#include "BasketOption.h"
 #include <mkl.h>
 #include <math.h>
 #include <algorithm>
@@ -24,6 +25,8 @@ public:
 	void stock_init(float stock_s0, float stock_mu, float stock_var, 
 					int stock_t, int stock_x, int idx);
 
+	void bskop_init(int bskop_n, Stock* bskop_stocks, float* bskop_cov, 
+					float bskop_k, float* bskop_w, int idx);
 
 	int execute();
 
@@ -42,7 +45,10 @@ private:
 	float* bond_rn = NULL;	   // Pointer to the bond's RN sequence
 
 	Stock* stock = NULL;
-	float* stock_rn = NULL;
+	float* stock_rn = NULL;		// Pointer to the stock's RN sequence
+
+	BasketOption* bskop = NULL;
+	float* bskop_rn = NULL;		// Pointer to the basket option's RN sequence
 
 
 	float* prices; // Pointer to the matrix of each of the product's prices

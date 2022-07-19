@@ -15,6 +15,7 @@ NestedMonteCarloVaR::~NestedMonteCarloVaR() {
 	free(prices);
 	free(bond_rn);
 	free(stock_rn);
+	free(bskop_rn);
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
@@ -41,6 +42,22 @@ void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu,
 	this->port_p0 += stock_s0 * stock_x * port_w[idx];
 }
 
+void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks, 
+	float* bskop_cov, float bskop_k, float* bskop_w, int idx) {
+
+	// Memory allocation
+	bskop_rn = (float*)malloc((size_t)path_ext * path_int * bskop_n * sizeof(float));
+
+	// Product initiation
+	bskop = new BasketOption(bskop_rn, bskop_n, bskop_stocks, bskop_cov,  bskop_k, bskop_w);
+
+	// add to the portfolio price
+	for (int i = 0; i < bskop_n; i++) {
+		this->port_p0 += bskop_stocks[i].get_s0() * bskop_stocks[i].get_x() 
+							* bskop_w[i] * port_w[idx];
+	}
+}
+
 int NestedMonteCarloVaR::execute() {
 	float* loss = (float*)malloc((size_t)path_ext * sizeof(float));
 	
@@ -49,25 +66,57 @@ int NestedMonteCarloVaR::execute() {
 		*(loss+i) = port_p0;
 	}
 
-	//// Random number preperation
+	// ===================================================================
+	// Random number preperation
 	RNG* rng = new RNG;
 	
 	// bond
+	// [path_ext, m]
 	rng->generate_sobol_cpu(bond_rn, bond->get_m(), path_ext);
 	rng->convert_normal(bond_rn, bond->get_m() * path_ext, 0.015f);
+
 	// stock
+	// [path_ext, n]
 	rng->generate_sobol_cpu(stock_rn, 1, path_ext);
 	rng->convert_normal(stock_rn, path_ext);
+
+	// Basket Option
+	// [path_ext, [path_int, n]] => [path_ext * path_int, n]
+	int bsk_n = bskop->get_n();
+	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
+	rng->generate_sobol_cpu(bskop_tmp_rn, bsk_n, path_ext * path_int);
+	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
+
+	// A[n * n]*rn[n * (path_ext * path_int)]
+	
+	cblas_sgemm(CblasRowMajor,
+		CblasNoTrans,
+		CblasTrans,
+		bsk_n,								// result row
+		path_ext * path_int * bsk_n,		// result col
+		bsk_n,								// length of "multiple by"
+		1,									// alpha
+		bskop->get_A(),						// A
+		bsk_n,								// col of A
+		bskop_tmp_rn,						// B
+		path_ext * path_int,				// col of B
+		0,									// beta
+		bskop_rn,							// C
+		path_ext * path_int					// col of C
+	);
+
+	free(bskop_tmp_rn);
 
 	cout << "Random Numbers:" << endl;
 	for (int i = 0; i < path_ext; i++) {
 		for (int j = 0; j < 1; j++) {
-			cout << stock_rn[i * 1 + j] << " ";
+			cout << bskop_rn[i * 1 + j] << " ";
 		}
 		cout << endl;
 	}
 
-	//// Outter Monte Carlo Simulation
+	// ===================================================================
+	// Outter Monte Carlo Simulation
 	// Store by row
 	int row_idx = 0;
 
@@ -84,6 +133,13 @@ int NestedMonteCarloVaR::execute() {
 		// Store to the next row of price matrix
 		prices[row_idx * path_ext + i] = stock->price_stock(i);
 	}
+	row_idx++;
+
+	// Basket Options
+	for (int i = 0; i < path_ext; i++) {
+		// Store to the next row of price matrix
+		prices[row_idx * path_ext + i] = bskop->price_basket_option(path_int, i);
+	}
 
 	// Reset
 	row_idx = 0;
@@ -96,7 +152,7 @@ int NestedMonteCarloVaR::execute() {
 		cout << endl;
 	}
 	
-
+	// ===================================================================
 	// Loss
 	// Todo: change 1 to e^rT
 	// [Test]can e^rT be ignored here to reduce calculation?
@@ -106,7 +162,8 @@ int NestedMonteCarloVaR::execute() {
 	// Loss = price+(-p0)
 	cout << endl << "Today Price:" << endl;
 	cout << port_p0 << endl;
-	cblas_sgemv(CblasRowMajor, CblasTrans, port_n, path_ext, -1, prices, path_ext, port_w, 1, 1, loss, 1);
+	cblas_sgemv(CblasRowMajor, CblasTrans, port_n, path_ext, -1, prices, 
+		path_ext, port_w, 1, 1, loss, 1);
 
 	cout << endl << "Loss:" << endl;
 	for (int i = 0; i < path_ext; i++) {
@@ -114,6 +171,7 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;
 
+	// ===================================================================
 	// Sort
 	std::sort(loss, loss + path_ext);
 
@@ -123,6 +181,7 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;
 
+	// ===================================================================
 	// Calculate var and cvar
 	int pos = (int)floor(path_ext * var_per);
 

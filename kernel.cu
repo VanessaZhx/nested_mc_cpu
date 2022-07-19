@@ -31,21 +31,3 @@ int main()
 	//mc->execute();
     return 0;
 }
-
-/*****************************************************************************
- *                               fir_test.cpp
- *
- * FIR class testing.
- *
- * Zhang Ming, 2010-03
- *****************************************************************************/
-
-//
-//#define BOUNDS_CHECK
-//
-//#include <iostream>
-//#include <fir.h>
-//
-//
-//using namespace std;
-//using namespace itlab;
