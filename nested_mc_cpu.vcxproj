@@ -37,12 +37,14 @@
     <Import Project="..\..\config_files\opencv.props" />
     <Import Project="..\..\config_files\Intel MKL.props" />
     <Import Project="..\..\config_files\curand.props" />
+    <Import Project="..\..\config_files\SP3.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\..\config_files\Intel MKL.props" />
     <Import Project="..\..\config_files\curand.props" />
     <Import Project="..\..\config_files\opencv.props" />
+    <Import Project="..\..\config_files\SP3.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -87,6 +89,7 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BasketOption.h" />
     <ClInclude Include="Bond.h" />
     <ClInclude Include="cuda_helper.cuh" />
     <ClInclude Include="NestedMonteCarloVaR.h" />
@@ -94,6 +97,7 @@
     <ClInclude Include="Stock.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BasketOption.cpp" />
     <ClCompile Include="Bond.cpp" />
     <ClCompile Include="NestedMonteCarloVaR.cpp" />
     <ClCompile Include="Stock.cpp" />
