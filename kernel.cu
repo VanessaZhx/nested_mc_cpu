@@ -23,12 +23,12 @@ int main()
 	const float stock_var = 0.13;			// Volatility
 	const int stock_t = 1;					// Steps(trade days)
 	const int stock_x = 20;					// Number of shares
-
-
-    NestedMonteCarloVaR* mc = new NestedMonteCarloVaR(path_ext,path_int,var_t, var_per, port_n, port_w);
+    
+		
+	NestedMonteCarloVaR* mc = new NestedMonteCarloVaR(path_ext,path_int,var_t, var_per, port_n, port_w);
 	mc->bond_init(bond_par, bond_c, bond_m, bond_y, bond_x, 0);
 	mc->stock_init(stock_s0, stock_mu, stock_var, stock_t, stock_x, 1);
-	mc->execute();
+	//mc->execute();
     return 0;
 }
 

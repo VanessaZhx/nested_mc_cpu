@@ -3,35 +3,81 @@
 #define BASKET_OPTION
 
 #include "Stock.h"
-#include <ccholesky.h>
-using namespace splab;
+#include <mkl.h>
+#include <curand_kernel.h>
+
+#include<iostream>
+
+using namespace std;
 
 class BasketOption {
 public:
+	//BasketOption() {
+	//	this->n = 4;
+	//	this->stocks = NULL;
+	//	this->k = 0;
+	//	this->w = 0;
+
+	//	rn = NULL;
+
+	//	float cov[16] = { 18, 22, 54, 42,22, 70, 86, 62,
+	//						54, 86, 174, 134, 42, 62, 134, 106 };
+
+	//	for (int i = 0; i < 4; i++) {
+	//		for (int j = 0; j < 4; j++) {
+	//			cout << cov[i * 4 + j] << " ";
+	//		}
+	//		cout << endl;
+	//	}
+
+	//	//A = (float*)malloc((size_t)n * n * sizeof(float));
+
+	//	LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'U', n, cov, n);
+
+	//	A = (float*)malloc((size_t)n * n * sizeof(float));
+	//	// Copy the cholesky result to A
+	//	for (int i = 0; i < n; i++) {
+	//		for (int j = 0; j < n; j++) {
+	//			A[i * 4 + j] = (i > j) ? 0 : cov[i * n + j];
+	//		}
+	//	}
+
+	//	for (int i = 0; i < 4; i++) {
+	//		for (int j = 0; j < 4; j++) {
+	//			cout << A[i * 4 + j] << " ";
+	//		}
+	//		cout << endl;
+	//	}
+
+	//	return;
+	//}
+
 	BasketOption(float*& data, int n, Stock* stocks, float* cov, float k, float* w) {
 		this->n = n;
 		this->stocks = stocks;
-		this->cov = cov;
 		this->k = k;
 		this->w = w;
 
 		rn = data;
 
-		// Cholesky
-		Matrix<float> C(n, n, cov), ca(n, n);
+		//// Cholesky decompose by lapack
+		// The result will be storeed in cov
+		// However the lower part won't be set to 0 automatically
+		LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'U', n, cov, n);
 
-		CCholesky<float> cho;
-		cho.dec(C);
-		if (!cho.isSpd())
-			cout << "Factorization was not complete." << endl;
-		else{
-			ca = cho.getL();
-			for (int i = 0; i < n; i++) {
-				for (int j = 0; j < n; j++) {
-					A[i * n + j] = ca[i][j];
-				}
+		// Copy the cholesky result to A
+		A = (float*)malloc((size_t)n * n * sizeof(float));
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				A[i * 4 + j] = (i > j) ? 0 : cov[i * n + j];
 			}
 		}
+
+		return;
+	}
+
+	~BasketOption() {
+		free(A);
 	}
 
 	float price_basket_option(int path_int, int offset) {
@@ -40,11 +86,11 @@ public:
 private:
 	int n;				// Number of stocks in the basket
 	Stock* stocks;		// Underlying stocks
-	float* cov;			// Covariance matrix
 	float k;			// Option execute price(strike)
 	float* w;			// Weight of each stock
 
-	float* A;			// Cholesky decomposistion
+public:
+	float* A;			// Cholesky decomposistion of the covariance matrix
 
 	float* rn;			// Random number list
 
@@ -52,74 +98,4 @@ private:
 
 
 #endif // !BASKET_OPTION
-
-/*****************************************************************************
- *                             ccholesky_test.cpp
- *
- * Comnplex Cholesky class testing.
- *
- * Zhang Ming, 2010-12, Xi'an Jiaotong University.
- *****************************************************************************/
-
-
-//#define BOUNDS_CHECK
-//
-//#include <iostream>
-//#include <iomanip>
-//#include <ccholesky.h>
-//
-//
-//using namespace std;
-//using namespace splab;
-//
-//
-//typedef double  Type;
-//const   int     N = 5;
-//
-//
-//int main()
-//{
-//	cout << setiosflags(ios::fixed) << setprecision(3);
-//	Matrix<complex<Type> > A(N, N), L(N, N);
-//	Vector<complex<Type> > b(N);
-//
-//	for (int i = 1; i < N + 1; ++i)
-//	{
-//		for (int j = 1; j < N + 1; ++j)
-//			if (i == j)
-//				A(i, i) = complex<Type>(N + i, 0);
-//			else
-//				if (i < j)
-//					A(i, j) = complex<Type>(Type(i), cos(Type(i)));
-//				else
-//					A(i, j) = complex<Type>(Type(j), -cos(Type(j)));
-//
-//		b(i) = i * (i + 1) / 2 + i * (N - i);
-//	}
-//
-//	cout << "The original matrix A : " << A << endl;
-//	CCholesky<complex<Type> > cho;
-//	cho.dec(A);
-//	if (!cho.isSpd())
-//		cout << "Factorization was not complete." << endl;
-//	else
-//	{
-//		L = cho.getL();
-//		cout << "The lower triangular matrix L is : " << L << endl;
-//		cout << "A - L*L^H is : " << A - L * trH(L) << endl;
-//
-//		Vector<complex<Type> > x = cho.solve(b);
-//		cout << "The constant vector b : " << b << endl;
-//		cout << "The solution of Ax = b : " << x << endl;
-//		cout << "The solution of Ax - b : " << A * x - b << endl;
-//
-//		Matrix<complex<Type> > IA = cho.solve(eye(N, complex<Type>(1, 0)));
-//		cout << "The inverse matrix of A : " << IA << endl;
-//		cout << "The product of  A*inv(A) : " << A * IA << endl;
-//	}
-//
-//	return 0;
-//}
-
-
 
