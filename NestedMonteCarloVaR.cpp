@@ -19,7 +19,7 @@ NestedMonteCarloVaR::~NestedMonteCarloVaR() {
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
-	float bond_y, float bond_x, int idx) {
+	float bond_y, int idx) {
 	// Memory allocation
 	bond_rn = (float*)malloc((size_t)path_ext * bond_m * sizeof(float));
 
@@ -27,7 +27,7 @@ void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m,
 	bond = new Bond(bond_rn, bond_par, bond_c, bond_m, bond_y);
 
 	// add to the portfolio price
-	this->port_p0 += bond_x * port_w[idx];
+	this->port_p0 += bond_par * port_w[idx];
 }
 
 void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu, 

@@ -16,7 +16,6 @@ int main()
 	const float bond_c = 100.0f;			// Coupon
 	const int bond_m = 10;					// Maturity
 	const float bond_y = 0.08f;				// yeild
-	const float bond_x = 1134.2f;			// today's price
 
 	const float stock_s0 = 300.0f;			// Start value of stock
 	const float stock_mu = 0.01f;			// risk free(or mean)
@@ -34,7 +33,7 @@ int main()
 	float bskop_w[bskop_n] = { 0.5f, 0.5f };
 		
 	NestedMonteCarloVaR* mc = new NestedMonteCarloVaR(path_ext,path_int,var_t, var_per, port_n, port_w);
-	mc->bond_init(bond_par, bond_c, bond_m, bond_y, bond_x, 0);
+	mc->bond_init(bond_par, bond_c, bond_m, bond_y, 0);
 	mc->stock_init(stock_s0, stock_mu, stock_var, stock_t, stock_x, 1);
 	mc->bskop_init(bskop_n, bskop_stocks, bskop_cov, bskop_k, bskop_w, 2);
 	mc->execute();
