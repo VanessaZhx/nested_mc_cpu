@@ -26,13 +26,25 @@ public:
 		// The result will be storeed in cov
 		// However the upper part won't be set to 0 automatically
 		LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'L', n, cov, n);
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				cout << cov[i * n + j] << " ";
+			}
+			cout << endl;
+		}
 
 		// Copy the cholesky result to A
 		A = (float*)malloc((size_t)n * n * sizeof(float));
 		for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
-				A[i * 4 + j] = (i < j) ? 0 : cov[i * n + j];
+				A[i * n + j] = (i < j) ? 0 : cov[i * n + j];
 			}
+		}
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < n; j++) {
+				cout << A[i * n + j] << " ";
+			}
+			cout << endl;
 		}
 
 		return;
@@ -51,16 +63,40 @@ public:
 
 		// The random number has already been transformed with cov
 		// Calculate each value with the correlated-random numbers
-		for (int i = 0; i < path_int; i++) {
-			for (int j = 0; j < n; j++) {
-				int rn_offset = offset * path_int * n + i * n + j;
-				value_each[i * n + j] = stocks[j].price_single_stock_with_z(rn[rn_offset]);
+		// random numbers[n][path_int]
+		for (int i = 0; i < n; i++) {
+			for (int j = 0; j < path_int; j++) {
+				int rn_offset = offset * path_int * n + i * path_int + j;
+				value_each[i * path_int + j] = stocks[i].price_single_stock_with_z(rn[rn_offset]);
+				cout << value_each[i * path_int + j] << ' ';
 			}
+			cout << endl;
 		}
 
 		// Multiply with weight
-		cblas_sgemv(CblasRowMajor, CblasTrans, 
-			n, path_int, 1, value_each, path_int, w, 1, 1, value_weighted, 1);
+		// Value_each[n][path_int]
+		// value_each[inter * n] * weight[n * 1]
+		float va[2] = { 100, 200 };
+		float temp[2] = { 0, 1 };
+		cblas_sgemv(CblasRowMajor,		// Specifies row-major
+			CblasTrans,					// Specifies whether to transpose matrix A.
+			n,					// A rows
+			path_int,							// A col
+			1,							// alpha	
+			value_each,					// A
+			path_int,					// The size of the first dimension of matrix A.
+			w,							// Vector X.
+			1,						// Stride within X. 
+			0,						// beta
+			value_weighted,			// Vector Y
+			1						// Stride within Y
+		);
+		
+		cout << "vw:" << endl;
+		for (int i = 0; i < path_int; i++) {
+			cout << value_weighted[i] << ' ';
+		}
+		cout << endl;
 
 		// Determine the price with stirke
 		// If the price is less than k, don't execute

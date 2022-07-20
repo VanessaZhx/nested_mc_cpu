@@ -6,6 +6,8 @@ class Stock{
 public:
 	Stock(float*& data, float s0, float mu, float var, int t, int x);
 
+	Stock(float s0, float mu, float var, int t, int x);
+
 	float get_s0() { return s0;}
 
 	float get_x() { return x; }

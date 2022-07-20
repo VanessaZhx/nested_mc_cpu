@@ -85,7 +85,31 @@ int NestedMonteCarloVaR::execute() {
 	int bsk_n = bskop->get_n();
 	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
 	rng->generate_sobol_cpu(bskop_tmp_rn, bsk_n, path_ext * path_int);
+	cout << "Random Numbers:" << endl;
+	for (int i = 0; i < path_ext * path_int; i++) {
+		for (int j = 0; j < bsk_n; j++) {
+			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
+		}
+		cout << endl;
+	}
+
 	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
+
+	cout << "Random Numbers:" << endl;
+	for (int i = 0; i < path_ext* path_int; i++) {
+		for (int j = 0; j < bsk_n; j++) {
+			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
+		}
+		cout << endl;
+	}
+
+	cout << "A:" << endl;
+	for (int i = 0; i < bsk_n; i++) {
+		for (int j = 0; j < bsk_n; j++) {
+			cout << bskop->get_A()[i * bsk_n + j] << " ";
+		}
+		cout << endl;
+	}
 
 	// A[n * n]*rn[n * (path_ext * path_int)]
 	
@@ -93,13 +117,13 @@ int NestedMonteCarloVaR::execute() {
 		CblasNoTrans,
 		CblasTrans,
 		bsk_n,								// result row
-		path_ext * path_int * bsk_n,		// result col
+		path_ext * path_int,				// result col
 		bsk_n,								// length of "multiple by"
 		1,									// alpha
 		bskop->get_A(),						// A
 		bsk_n,								// col of A
 		bskop_tmp_rn,						// B
-		path_ext * path_int,				// col of B
+		bsk_n,								// col of B
 		0,									// beta
 		bskop_rn,							// C
 		path_ext * path_int					// col of C
@@ -108,9 +132,9 @@ int NestedMonteCarloVaR::execute() {
 	free(bskop_tmp_rn);
 
 	cout << "Random Numbers:" << endl;
-	for (int i = 0; i < path_ext; i++) {
-		for (int j = 0; j < 1; j++) {
-			cout << bskop_rn[i * 1 + j] << " ";
+	for (int i = 0; i < bsk_n; i++) {
+		for (int j = 0; j < path_ext * path_int; j++) {
+			cout << bskop_rn[i * path_ext * path_int + j] << " ";
 		}
 		cout << endl;
 	}
@@ -163,7 +187,7 @@ int NestedMonteCarloVaR::execute() {
 	cout << endl << "Today Price:" << endl;
 	cout << port_p0 << endl;
 	cblas_sgemv(CblasRowMajor, CblasTrans, port_n, path_ext, -1, prices, 
-		path_ext, port_w, 1, 1, loss, 1);
+		path_ext, port_w, 1, 0, loss, 1);
 
 	cout << endl << "Loss:" << endl;
 	for (int i = 0; i < path_ext; i++) {
