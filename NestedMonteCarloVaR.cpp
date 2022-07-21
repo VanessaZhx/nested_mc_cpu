@@ -1,12 +1,14 @@
 #include "NestedMonteCarloVaR.h"
 
-NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint, int t, float per, int port_n, float* weight) {
+NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint, 
+	int t, float per, int port_n, float* weight, float risk_free) {
 	this->path_ext = pext;
 	this->path_int = pint;
 	this->var_t = t;
 	this->var_per = per;
 	this->port_n = port_n;
 	this->port_w = weight;
+	this->risk_free = risk_free;
 
 	prices = (float*)malloc((size_t)path_ext * port_n * sizeof(float));
 }
@@ -52,20 +54,17 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 	bskop = new BasketOption(bskop_rn, bskop_n, bskop_stocks, bskop_cov,  bskop_k, bskop_w);
 
 	// add to the portfolio price
+	// {S0 - K, 0}, K should be lagerer than S0, so start price would be 0 
+	float stock_p = 0.0f;
 	for (int i = 0; i < bskop_n; i++) {
-		this->port_p0 += bskop_stocks[i].get_s0() * bskop_stocks[i].get_x() 
-							* bskop_w[i] * port_w[idx];
+		stock_p += bskop_stocks[i].get_s0() * bskop_stocks[i].get_x()
+			* bskop_w[i];
 	}
+	this->port_p0 += (exp(risk_free * var_t) - 1) * stock_p  * port_w[idx];
+	//this->port_p0 += 0;
 }
 
 int NestedMonteCarloVaR::execute() {
-	float* loss = (float*)malloc((size_t)path_ext * sizeof(float));
-	
-	//// Fill loss with negtive today's price of the portfolio
-	for (int i = 0; i < path_ext; i++) {
-		*(loss+i) = port_p0;
-	}
-
 	// ===================================================================
 	// Random number preperation
 	RNG* rng = new RNG;
@@ -178,17 +177,33 @@ int NestedMonteCarloVaR::execute() {
 	
 	// ===================================================================
 	// Loss
-	// Todo: change 1 to e^rT
-	// [Test]can e^rT be ignored here to reduce calculation?
-	// it doesn't affect the sorting result
-	// 
-	// [path_ext*n]*[n * 1]
-	// Loss = price+(-p0)
 	cout << endl << "Today Price:" << endl;
 	cout << port_p0 << endl;
-	cblas_sgemv(CblasRowMajor, CblasTrans, port_n, path_ext, -1, prices, 
-		path_ext, port_w, 1, 0, loss, 1);
 
+	// Fill loss with negtive today's price of the portfolio
+	float* loss = (float*)malloc((size_t)path_ext * sizeof(float));
+	for (int i = 0; i < path_ext; i++) {
+		*(loss + i) = port_p0;
+	}
+
+	// prices[port_n][path_ext]
+	// prices[path_ext * port_n] * w[port_n * 1]
+	// Loss = -(p-p0) = p0-p
+	// Loss = p0 - e^-rT * (price*w) = loss + (- e^-rT) *(price*w)
+	// haven't get ln here, but doesn't affect sorting
+	cblas_sgemv(CblasRowMajor,			// Specifies row-major
+		CblasTrans,						// Specifies whether to transpose matrix A.
+		port_n,							// A rows
+		path_ext,						// A col
+		-exp(-1 * risk_free* var_t),	// alpha
+		prices,							// A
+		path_ext,						// The size of the first dimension of matrix A.
+		port_w,							// Vector X.
+		1,								// Stride within X. 
+		1,								// beta
+		loss,							// Vector Y
+		1);								// Stride within Y
+					
 	cout << endl << "Loss:" << endl;
 	for (int i = 0; i < path_ext; i++) {
 		cout << loss[i] << " ";

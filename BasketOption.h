@@ -68,7 +68,7 @@ public:
 			for (int j = 0; j < path_int; j++) {
 				int rn_offset = offset * path_int * n + i * path_int + j;
 				value_each[i * path_int + j] = stocks[i].price_single_stock_with_z(rn[rn_offset]);
-				cout << value_each[i * path_int + j] << ' ';
+				//cout << value_each[i * path_int + j] << ' ';
 			}
 			cout << endl;
 		}

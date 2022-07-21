@@ -15,7 +15,7 @@ using namespace std;
 class NestedMonteCarloVaR {
 public:
 	NestedMonteCarloVaR(int pext, int pint, 
-		int t, float per, int port_n, float* weight);
+		int t, float per, int port_n, float* weight, float risk_free);
 
 	~NestedMonteCarloVaR();
 
@@ -40,6 +40,8 @@ private:
 	int port_n = 0;			// Number of products in the portfolio
 	float* port_w = 0;		// Weights of the products in the portfolio
 	float port_p0 = 0;		// Today's price of the portfolio
+
+	float risk_free = 0;	// Risk free rate
 
 	Bond* bond = NULL;
 	float* bond_rn = NULL;	   // Pointer to the bond's RN sequence
