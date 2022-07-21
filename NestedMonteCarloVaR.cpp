@@ -21,7 +21,7 @@ NestedMonteCarloVaR::~NestedMonteCarloVaR() {
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
-	float bond_y, int idx) {
+	float* bond_y, int idx) {
 	// Memory allocation
 	bond_rn = (float*)malloc((size_t)path_ext * bond_m * sizeof(float));
 
@@ -72,7 +72,7 @@ int NestedMonteCarloVaR::execute() {
 	// bond
 	// [path_ext, m]
 	rng->generate_sobol_cpu(bond_rn, bond->get_m(), path_ext);
-	rng->convert_normal(bond_rn, bond->get_m() * path_ext, 0.015f);
+	rng->convert_normal(bond_rn, bond->get_m() * path_ext, 0.5f);
 
 	// stock
 	// [path_ext, n]

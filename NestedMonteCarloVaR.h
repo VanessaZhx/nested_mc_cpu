@@ -20,7 +20,7 @@ public:
 	~NestedMonteCarloVaR();
 
 	void bond_init(float bond_par, float bond_c, int bond_m, 
-					float bond_y, int idx);
+					float* bond_y, int idx);
 
 	void stock_init(float stock_s0, float stock_mu, float stock_var, 
 					int stock_t, int stock_x, int idx);

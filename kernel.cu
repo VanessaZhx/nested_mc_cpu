@@ -16,7 +16,8 @@ int main()
 	const float bond_par = 1000.0f;			// Par value of bond
 	const float bond_c = 100.0f;			// Coupon
 	const int bond_m = 10;					// Maturity
-	const float bond_y = 0.08f;				// yeild
+	float bond_y[bond_m] = { 5.00f, 5.69f, 6.09f, 6.38f, 6.61f,
+		   6.79f, 6.94f, 7.07f, 7.19f, 7.30f };				// yeild
 
 	const float stock_s0 = 300.0f;			// Start value of stock
 	const float stock_mu = risk_free;			// risk free(or mean)
