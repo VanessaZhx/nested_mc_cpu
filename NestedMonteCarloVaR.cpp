@@ -21,15 +21,15 @@ NestedMonteCarloVaR::~NestedMonteCarloVaR() {
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
-	float* bond_y, int idx) {
+	float* bond_y,float sig, int idx) {
 	// Memory allocation
-	bond_rn = (float*)malloc((size_t)path_ext * bond_m * sizeof(float));
+	bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 
 	// Product initiation
-	bond = new Bond(bond_rn, bond_par, bond_c, bond_m, bond_y);
+	bond = new Bond(bond_rn, bond_par, bond_c, bond_m, bond_y, sig);
 
-	// add to the portfolio price
-	this->port_p0 += bond_par * port_w[idx];
+	// add start value to the portfolio start price
+	this->port_p0 += bond->price_bond_with_delta_yield(0);
 }
 
 void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu, 
@@ -65,14 +65,24 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 }
 
 int NestedMonteCarloVaR::execute() {
+	// TODO: CLEAN CLASS DEFINATION && REDUCE FUNCTION CALL!!!
 	// ===================================================================
 	// Random number preperation
 	RNG* rng = new RNG;
 	
-	// bond
-	// [path_ext, m]
-	rng->generate_sobol_cpu(bond_rn, bond->get_m(), path_ext);
-	rng->convert_normal(bond_rn, bond->get_m() * path_ext, 0.5f);
+	// Todo: fix RN seed
+	// 
+	// BOND
+	// RN is used to move yield curve up/down, N~(0, sigma^2)
+	// [path_ext]
+	rng->generate_sobol_cpu(bond_rn, 1, path_ext);
+	rng->convert_normal(bond_rn, path_ext, bond->get_sigma());
+
+	cout << "Random Numbers:" << endl;
+	for (int i = 0; i < path_ext; i++) {
+			cout << bond_rn[i] << " ";
+	}
+	cout << endl;
 
 	// stock
 	// [path_ext, n]
@@ -84,31 +94,32 @@ int NestedMonteCarloVaR::execute() {
 	int bsk_n = bskop->get_n();
 	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
 	rng->generate_sobol_cpu(bskop_tmp_rn, bsk_n, path_ext * path_int);
-	cout << "Random Numbers:" << endl;
+
+	/*cout << "Random Numbers:" << endl;
 	for (int i = 0; i < path_ext * path_int; i++) {
 		for (int j = 0; j < bsk_n; j++) {
 			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
 		}
 		cout << endl;
-	}
+	}*/
 
 	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
 
-	cout << "Random Numbers:" << endl;
+	/*cout << "Random Numbers:" << endl;
 	for (int i = 0; i < path_ext* path_int; i++) {
 		for (int j = 0; j < bsk_n; j++) {
 			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
 		}
 		cout << endl;
-	}
+	}*/
 
-	cout << "A:" << endl;
+	/*cout << "A:" << endl;
 	for (int i = 0; i < bsk_n; i++) {
 		for (int j = 0; j < bsk_n; j++) {
 			cout << bskop->get_A()[i * bsk_n + j] << " ";
 		}
 		cout << endl;
-	}
+	}*/
 
 	// A[n * n]*rn[n * (path_ext * path_int)]
 	
@@ -130,13 +141,13 @@ int NestedMonteCarloVaR::execute() {
 
 	free(bskop_tmp_rn);
 
-	cout << "Random Numbers:" << endl;
+	/*cout << "Random Numbers:" << endl;
 	for (int i = 0; i < bsk_n; i++) {
 		for (int j = 0; j < path_ext * path_int; j++) {
 			cout << bskop_rn[i * path_ext * path_int + j] << " ";
 		}
 		cout << endl;
-	}
+	}*/
 
 	// ===================================================================
 	// Outter Monte Carlo Simulation

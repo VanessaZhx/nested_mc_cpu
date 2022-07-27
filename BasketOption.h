@@ -40,12 +40,12 @@ public:
 				A[i * n + j] = (i < j) ? 0 : cov[i * n + j];
 			}
 		}
-		for (int i = 0; i < n; i++) {
+		/*for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				cout << A[i * n + j] << " ";
 			}
 			cout << endl;
-		}
+		}*/
 
 		return;
 	}
@@ -70,7 +70,7 @@ public:
 				value_each[i * path_int + j] = stocks[i].price_single_stock_with_z(rn[rn_offset]);
 				//cout << value_each[i * path_int + j] << ' ';
 			}
-			cout << endl;
+			//cout << endl;
 		}
 
 		// Multiply with weight
@@ -92,11 +92,11 @@ public:
 			1						// Stride within Y
 		);
 		
-		cout << "vw:" << endl;
+		/*cout << "vw:" << endl;
 		for (int i = 0; i < path_int; i++) {
 			cout << value_weighted[i] << ' ';
 		}
-		cout << endl;
+		cout << endl;*/
 
 		// Determine the price with stirke
 		// If the price is less than k, don't execute
