@@ -23,7 +23,7 @@ public:
 					float* bond_y, float sig, int idx);
 
 	void stock_init(float stock_s0, float stock_mu, float stock_var, 
-					int stock_t, int stock_x, int idx);
+					int stock_x, int idx);
 
 	void bskop_init(int bskop_n, Stock* bskop_stocks, float* bskop_cov, 
 					float bskop_k, float* bskop_w, int idx);

@@ -28,17 +28,18 @@ void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m,
 	// Product initiation
 	bond = new Bond(bond_rn, bond_par, bond_c, bond_m, bond_y, sig);
 
-	// add start value to the portfolio start price
-	this->port_p0 += bond->price_bond_with_delta_yield(0);
+	// add start price to the portfolio start price
+	// Start price for bond is priced with original yield curve
+	this->port_p0 += bond->price_bond_with_delta_yield(0) * port_w[idx];
 }
 
 void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu, 
-	float stock_var, int stock_t, int stock_x, int idx) {
+	float stock_var, int stock_x, int idx) {
 	// Memory allocation
 	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 
 	// Product initiation
-	stock = new Stock(stock_rn, stock_s0,stock_mu, stock_var, stock_t, stock_x);
+	stock = new Stock(stock_rn, stock_s0, stock_mu, stock_var, stock_x);
 
 	// add to the portfolio price
 	this->port_p0 += stock_s0 * stock_x * port_w[idx];
@@ -72,22 +73,24 @@ int NestedMonteCarloVaR::execute() {
 	
 	// Todo: fix RN seed
 	// 
-	// BOND
+	// == BOND ==
 	// RN is used to move yield curve up/down, N~(0, sigma^2)
-	// [path_ext]
+	// [path_ext, 1]
 	rng->generate_sobol_cpu(bond_rn, 1, path_ext);
 	rng->convert_normal(bond_rn, path_ext, bond->get_sigma());
 
+	// == STOCK ==
+	// RN is used as the external path
+	// For stock pricing only, there's no need to generate the inner path now
+	// [path_ext, var_t]
+	rng->generate_sobol_cpu(stock_rn, var_t, path_ext);
+	rng->convert_normal(stock_rn, path_ext);
+
 	cout << "Random Numbers:" << endl;
 	for (int i = 0; i < path_ext; i++) {
-			cout << bond_rn[i] << " ";
+		cout << bond_rn[i] << " ";
 	}
 	cout << endl;
-
-	// stock
-	// [path_ext, n]
-	rng->generate_sobol_cpu(stock_rn, 1, path_ext);
-	rng->convert_normal(stock_rn, path_ext);
 
 	// Basket Option
 	// [path_ext, [path_int, n]] => [path_ext * path_int, n]
@@ -165,7 +168,7 @@ int NestedMonteCarloVaR::execute() {
 	// Stock
 	for (int i = 0; i < path_ext; i++) {
 		// Store to the next row of price matrix
-		prices[row_idx * path_ext + i] = stock->price_stock(i);
+		prices[row_idx * path_ext + i] = stock->price_stock(i, var_t);
 	}
 	row_idx++;
 
