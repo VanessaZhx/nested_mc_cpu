@@ -6,7 +6,7 @@ public:
 	float s0;
 	float mu;
 	float var;
-	float x;
+	int x;
 
 
 	Stock(float s0, float mu, float var, int x) {

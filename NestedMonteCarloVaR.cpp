@@ -1,7 +1,7 @@
 #include "NestedMonteCarloVaR.h"
 using namespace std;
 
-NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint, 
+NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
 	int t, float per, int port_n, float* weight, float risk_free) {
 	this->path_ext = pext;
 	this->path_int = pint;
@@ -10,13 +10,6 @@ NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
 	this->port_n = port_n;
 	this->port_w = weight;
 	this->risk_free = risk_free;
-
-	prices = (float*)malloc((size_t)path_ext * port_n * sizeof(float));
-}
-
-NestedMonteCarloVaR::~NestedMonteCarloVaR() {
-	free(prices);
-	
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
@@ -29,9 +22,9 @@ void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m,
 	// Start price for bond is priced with original yield curve
 	float price = 0.0f;
 	for (int i = 0; i < bond_m; i++) {
-		price += bond_c / pow(1.0f + (bond_y[i]) / 100, i + 1);
+		price += bond_c / powf(1.0f + (bond_y[i]) / 100, float(i + 1));
 	}
-	price += bond_par / pow(1.0f + (bond_y[bond_m - 1]) / 100, bond_m);
+	price += bond_par / powf(1.0f + (bond_y[bond_m - 1]) / 100, float(bond_m));
 
 	this->port_p0 += price * port_w[idx];
 }
@@ -87,7 +80,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		for (int j = 0; j < path_int; j++) {
 			value_each[i * path_int + j] = s->x * s->s0 
 				* exp((s->mu - 0.5f * s->var * s->var) * bskop_t
-				+ s->var * sqrtf(bskop_t) * rn[i * path_int + j]);
+				+ s->var * sqrtf(float(bskop_t)) * rn[i * path_int + j]);
 		}
 	}
 
@@ -124,9 +117,9 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 
 
 int NestedMonteCarloVaR::execute() {
-	// TODO: CLEAN CLASS DEFINATION && REDUCE FUNCTION CALL!!!
-	// ===================================================================
-	// Random number preperation
+	// ====================================================
+	//             Random number preperation
+	// ====================================================
 	RNG* rng = new RNG;
 	
 	// Todo: fix RN seed
@@ -145,12 +138,6 @@ int NestedMonteCarloVaR::execute() {
 	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 	rng->generate_sobol_cpu(stock_rn, var_t, path_ext);
 	rng->convert_normal(stock_rn, path_ext);
-
-	//cout << "Random Numbers:" << endl;
-	//for (int i = 0; i < path_ext; i++) {
-	//	cout << bond_rn[i] << " ";
-	//}
-	//cout << endl;
 
 	/*== Basket Option ==
 	** Need two set of random numbers
@@ -190,59 +177,30 @@ int NestedMonteCarloVaR::execute() {
 	);
 
 	free(bskop_tmp_rn);
+	delete(rng);
 
-	/*cout << "Random Numbers:" << endl;
-	for (int i = 0; i < path_ext * path_int; i++) {
-		for (int j = 0; j < bsk_n; j++) {
-			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
-		}
-		cout << endl;
-	}
-	
-	cout << "Random Numbers:" << endl;
-	for (int i = 0; i < path_ext* path_int; i++) {
-		for (int j = 0; j < bsk_n; j++) {
-			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
-		}
-		cout << endl;
-	}
-	
-	cout << "A:" << endl;
-	for (int i = 0; i < bsk_n; i++) {
-		for (int j = 0; j < bsk_n; j++) {
-			cout << bskop->get_A()[i * bsk_n + j] << " ";
-		}
-		cout << endl;
-	}
-
-	cout << "Random Numbers:" << endl;
-	for (int i = 0; i < bsk_n; i++) {
-		for (int j = 0; j < path_ext * path_int; j++) {
-			cout << bskop_rn[i * path_ext * path_int + j] << " ";
-		}
-		cout << endl;
-	}
-	*/
-
-
-	// ===================================================================
-	// Outter Monte Carlo Simulation
+	// ====================================================
+	//            Outter Monte Carlo Simulation
+	// ====================================================
 	// Store by row
 	int row_idx = 0;
-
-	// Bond
+	prices = (float*)malloc((size_t)path_ext * port_n * sizeof(float));
+	/* ====================
+	** ==      Bond      ==
+	** ==================== */
 	float price = 0.0f;
 	for (int i = 0; i < path_ext; i++) {
-		// Store to first row of prices matrix
 		price = 0.0f;
 		// Loop to sum the coupon price until the maturity
 		for (int i = 0; i < bond->bond_m; i++) {
-			price += bond->bond_c / pow(1.0f + (bond->bond_y[i] + bond_rn[i]) / 100, i + 1);
+			price += bond->bond_c / 
+				powf(1.0f + (bond->bond_y[i] + bond_rn[i]) / 100, float(i + 1));
 		}
 		// Add the face value
 		price += bond->bond_par / 
-			pow(1.0f + (bond->bond_y[bond->bond_m - 1] + bond_rn[i]) / 100, bond->bond_m);
+			powf(1.0f + (bond->bond_y[bond->bond_m - 1] + bond_rn[i]) / 100, float(bond->bond_m));
 
+		// Store to first row of prices matrix
 		prices[row_idx * path_ext + i] = price;
 		
 	}
@@ -255,7 +213,7 @@ int NestedMonteCarloVaR::execute() {
 		// Store to the next row of price matrix
 		prices[row_idx * path_ext + i] = stock->x * stock->s0
 			* exp((stock->mu - 0.5f * stock->var * stock->var) * var_t
-			+ stock->var * sqrtf(var_t) * stock_rn[i]);
+			+ stock->var * sqrtf(float(var_t)) * stock_rn[i]);
 	}
 	row_idx++;
 
@@ -274,7 +232,7 @@ int NestedMonteCarloVaR::execute() {
 			s = &(bskop->stocks[j]);
 			bskop_stock_price[j] = s->s0
 				* exp((s->mu- 0.5f * s->var * s->var)* var_t 
-					+ s->var * sqrtf(var_t) * bskop_ext_rn[i* bskop->n + j]);
+					+ s->var * sqrtf(float(var_t)) * bskop_ext_rn[i* bskop->n + j]);
 		}
 		
 		// Inner loop
@@ -287,7 +245,7 @@ int NestedMonteCarloVaR::execute() {
 				int rn_offset = i * path_int * bskop->n + j * path_int + k;
 				value_each[j * path_int + k] = s->x * 
 					bskop_stock_price[j] * exp((s->mu - 0.5f * s->var * s->var) * bskop_t
-						+ s->var * sqrtf(bskop_t) * bskop_rn[rn_offset]);
+						+ s->var * sqrtf(float(bskop_t)) * bskop_rn[rn_offset]);
 			}
 		}
 
@@ -315,7 +273,6 @@ int NestedMonteCarloVaR::execute() {
 			call += (value_weighted[i] > bskop->k) ? (value_weighted[i] - bskop->k) : 0;
 		}
 		
-
 		// Store to the next row of price matrix
 		prices[row_idx * path_ext + i] = call / bskop->n;
 	}
@@ -335,12 +292,12 @@ int NestedMonteCarloVaR::execute() {
 		}
 		cout << endl;
 	}
-	
-	// ===================================================================
-	// Loss
 	cout << endl << "Today Price:" << endl;
 	cout << port_p0 << endl;
-
+	
+	// ====================================================
+	//						Loss
+	// ====================================================
 	// Fill loss with negtive today's price of the portfolio
 	float* loss = (float*)malloc((size_t)path_ext * sizeof(float));
 	for (int i = 0; i < path_ext; i++) {
@@ -371,8 +328,9 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;
 
-	// ===================================================================
-	// Sort
+	// ====================================================
+	//						Sort
+	// ====================================================
 	std::sort(loss, loss + path_ext);
 
 	cout << endl << "Sorted Loss:" << endl;
@@ -381,8 +339,10 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;
 
-	// ===================================================================
-	// Calculate var and cvar
+
+	// ====================================================
+	//				Calculate var and cvar
+	// ====================================================
 	int pos = (int)floor(path_ext * var_per);
 
 	float var = loss[pos];
@@ -397,11 +357,10 @@ int NestedMonteCarloVaR::execute() {
 	cout << "cvar:" << cvar << endl;
 
 	free(loss);
-
+	free(prices);
 	free(stock_rn);
 	free(bskop_rn);
 	free(bond_rn);
 	
-
 	return 0;
 }

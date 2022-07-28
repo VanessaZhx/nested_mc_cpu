@@ -17,8 +17,6 @@ public:
 	NestedMonteCarloVaR(int pext, int pint, 
 		int t, float per, int port_n, float* weight, float risk_free);
 
-	~NestedMonteCarloVaR();
-
 	void bond_init(float bond_par, float bond_c, int bond_m, 
 					float* bond_y, float sig, int idx);
 
@@ -54,7 +52,7 @@ private:
 	float* bskop_rn = NULL;		// Pointer to the basket option's RN sequence
 
 
-	float* prices; // Pointer to the matrix of each of the product's prices
+	float* prices = NULL; // Pointer to the matrix of each of the product's prices
 };
 
 
