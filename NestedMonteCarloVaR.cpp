@@ -64,12 +64,12 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		path_int,								// result col
 		bskop_n,								// length of "multiple by"
 		1,										// alpha
-		bskop->A,							// A
+		bskop->A,								// A
 		bskop_n,								// col of A
 		tmp_rn,									// B
 		bskop_n,								// col of B
 		0,										// beta
-		rn,								// C
+		rn,										// C
 		path_int								// col of C
 	);
 
@@ -87,18 +87,18 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		}
 	}
 
-	cblas_sgemv(CblasRowMajor,		// Specifies row-major
-		CblasTrans,					// Specifies whether to transpose matrix A.
-		bskop_n,					// A rows
+	cblas_sgemv(CblasRowMajor,				// Specifies row-major
+		CblasTrans,							// Specifies whether to transpose matrix A.
+		bskop_n,							// A rows
 		path_int,							// A col
-		1,							// alpha	
-		value_each,					// A
-		path_int,					// The size of the first dimension of matrix A.
+		1,									// alpha	
+		value_each,							// A
+		path_int,							// The size of the first dimension of matrix A.
 		bskop_w,							// Vector X.
-		1,						// Stride within X. 
-		0,						// beta
-		value_weighted,			// Vector Y
-		1						// Stride within Y
+		1,									// Stride within X. 
+		0,									// beta
+		value_weighted,						// Vector Y
+		1									// Stride within Y
 	);
 
 	float call = 0.0f;
@@ -303,7 +303,7 @@ double NestedMonteCarloVaR::execute() {
 	// Fill loss with negtive today's price of the portfolio
 	float* loss = (float*)malloc((size_t)path_ext * sizeof(float));
 	for (int i = 0; i < path_ext; i++) {
-		*(loss + i) = port_p0;
+		loss[i] = port_p0;
 	}
 
 	// prices[port_n][path_ext]
