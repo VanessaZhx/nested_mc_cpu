@@ -17,7 +17,7 @@ public:
     ~RNG();
     int RNG::init();
     void set_offset(int ofs) { offset = ofs; }
-    int generate_sobol_cpu(float*& data, int m, int n, int offset = 1024);
+    int generate_sobol_cpu(float*& data, int m, int n);
     int convert_normal(float*& data, int length, float sigma = 1);
 private:
     curandGenerator_t gen;

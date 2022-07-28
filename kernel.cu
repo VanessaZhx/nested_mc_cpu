@@ -2,8 +2,10 @@
 
 int main()
 {
-	const int path_ext = 3096;  // Number of the outer MC loops
-	const int path_int = 1024;  // Number of the inner MC loops
+	const int exp_times = 1;   // Total times of MC
+
+	const int path_ext = 4 * 1024;  // Number of the outer MC loops
+	const int path_int = 4 * 1024;  // Number of the inner MC loops
 
 	const int var_t = 1;					// VaR duration
 	const float var_per = 0.95f;				// 1-percentile
@@ -46,6 +48,11 @@ int main()
 	mc->bond_init(bond_par, bond_c, bond_m, bond_y, sigma, 0);
 	mc->stock_init(stock_s0, stock_mu, stock_var, stock_x, 1);
 	mc->bskop_init(bskop_n, bskop_stocks, bskop_cov, bskop_k, bskop_w, bskop_t, 2);
-	mc->execute();
+
+	double exe_time = 0.0;
+	for (int i = 0; i < exp_times; i++) {
+		exe_time = mc->execute();
+		cout << "EXECUTION TIME: " << exe_time << " ms." << endl;
+	}
     return 0;
 }

@@ -1,9 +1,4 @@
 #include "NestedMonteCarloVaR.h"
-
-#include <iostream>
-#include <fstream>
-#include <vector>
-
 using namespace std;
 
 NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
@@ -124,29 +119,29 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 
 
 
-int NestedMonteCarloVaR::execute() {
+double NestedMonteCarloVaR::execute() {
+	chrono::steady_clock::time_point start = chrono::steady_clock::now();
 	// ====================================================
 	//             Random number preperation
 	// ====================================================
-	
-	// Todo: fix RN seed
-	// 
-	// == BOND ==
-	// RN is used to move yield curve up/down, N~(0, sigma^2)
-	// [path_ext, 1]
+	/* == BOND ==
+	** RN is used to move yield curve up/down, N~(0, sigma^2)
+	** [path_ext, 1]
+	*/
 	bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 	rng->generate_sobol_cpu(bond_rn, 1, path_ext);
 	rng->convert_normal(bond_rn, path_ext, bond->sigma);
 
-	// == STOCK ==
-	// RN is used as the external path
-	// For stock pricing only, there's no need to generate the inner path now
-	// [path_ext, var_t]
+	/* == STOCK ==
+	** RN is used as the external path
+	** For stock pricing only, there's no need to generate the inner path now
+	** [path_ext, var_t]
+	*/
 	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 	rng->generate_sobol_cpu(stock_rn, var_t, path_ext);
 	rng->convert_normal(stock_rn, var_t * path_ext);
 
-	/*== Basket Option ==
+	/* == Basket Option ==
 	** Need two set of random numbers
 	** First: to reprice underlying stocks at H(use as S0 in inner)
 	** [path_ext, n]
@@ -290,6 +285,7 @@ int NestedMonteCarloVaR::execute() {
 
 	// Reset
 	row_idx = 0;
+	rng->set_offset(1024);
 
 	/*cout << endl << "Prices:" << endl;
 	for (int i = 0; i < port_n; i++) {
@@ -298,8 +294,8 @@ int NestedMonteCarloVaR::execute() {
 		}
 		cout << endl;
 	}*/
-	cout << endl << "Start Price:" << endl;
-	cout << port_p0 << endl;
+	/*cout << endl << "Start Price:" << endl;
+	cout << port_p0 << endl;*/
 	
 	// ====================================================
 	//						Loss
@@ -345,7 +341,7 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;*/
 
-	output_res(loss, path_ext);
+	//output_res(loss, path_ext);
 
 
 	// ====================================================
@@ -360,18 +356,21 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cvar /= path_ext - pos;
 
-	cout << endl;
+	/*cout << endl;
 	cout << "var:" << var << endl;
-	cout << "cvar:" << cvar << endl;
+	cout << "cvar:" << cvar << endl;*/
 
 	free(loss);
 	free(prices);
 	free(stock_rn);
 	free(bskop_rn);
 	free(bond_rn);
-	delete(rng);
+	//delete(rng);
 	
-	return 0;
+	chrono::steady_clock::time_point end = chrono::steady_clock::now();
+	chrono::duration<double, std::milli> elapsed = end - start;
+
+	return elapsed.count();
 }
 
 void NestedMonteCarloVaR::output_res(float* data, int len) {

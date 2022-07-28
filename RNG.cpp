@@ -8,7 +8,7 @@ RNG::~RNG() {
     curandDestroyGenerator(gen);
 }
 
-int RNG::generate_sobol_cpu(float*& data, int m, int n, int offset) {
+int RNG::generate_sobol_cpu(float*& data, int m, int n) {
     // M-dim of N numbers
     /* Set offset*/
     CURAND_CALL(curandSetGeneratorOffset(gen, this->offset));

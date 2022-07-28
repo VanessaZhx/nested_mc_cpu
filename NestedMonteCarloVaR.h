@@ -9,6 +9,11 @@
 #include <mkl.h>
 #include <math.h>
 #include <algorithm>
+#include <chrono>
+
+#include <iostream>
+#include <fstream>
+
 
 using namespace std;
 
@@ -26,7 +31,7 @@ public:
 	void bskop_init(int bskop_n, Stock* bskop_stocks, float* bskop_cov, 
 					float bskop_k, float* bskop_w, int bskop_t, int idx);
 
-	int execute();
+	double execute();
 
 	void output_res(float* data, int len);
 
