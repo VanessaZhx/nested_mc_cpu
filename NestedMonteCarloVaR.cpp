@@ -17,8 +17,6 @@ NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
 NestedMonteCarloVaR::~NestedMonteCarloVaR() {
 	free(prices);
 	free(bond_rn);
-	free(stock_rn);
-	free(bskop_rn);
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
@@ -36,11 +34,9 @@ void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m,
 
 void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu, 
 	float stock_var, int stock_x, int idx) {
-	// Memory allocation
-	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 
 	// Product initiation
-	stock = new Stock(stock_rn, stock_s0, stock_mu, stock_var, stock_x);
+	stock = new Stock(stock_s0, stock_mu, stock_var, stock_x);
 
 	// add to the portfolio price
 	this->port_p0 += stock_s0 * stock_x * port_w[idx];
@@ -80,12 +76,14 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 	// Price the start value
 	float* value_each = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
 	float* value_weighted = (float*)malloc((size_t)path_int * sizeof(float));
+	Stock* s;
 
 	for (int i = 0; i < bskop_n; i++) {
+		s = &(bskop_stocks[i]);
 		for (int j = 0; j < path_int; j++) {
-			int rn_offset = i * path_int + j;
-			value_each[i * path_int + j] = bskop_stocks[i]
-				.price_single_stock_with_z(rn[rn_offset], 1);
+			value_each[i * path_int + j] = s->x * s->s0 
+				* exp((s->mu - 0.5f * s->var * s->var) * bskop_t
+				+ s->var * sqrtf(bskop_t) * rn[i * path_int + j]);
 		}
 	}
 
@@ -139,6 +137,7 @@ int NestedMonteCarloVaR::execute() {
 	// RN is used as the external path
 	// For stock pricing only, there's no need to generate the inner path now
 	// [path_ext, var_t]
+	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 	rng->generate_sobol_cpu(stock_rn, var_t, path_ext);
 	rng->convert_normal(stock_rn, path_ext);
 
@@ -234,10 +233,14 @@ int NestedMonteCarloVaR::execute() {
 	}
 	row_idx++;
 	
-	// Stock
+	/* ====================
+	** ==     Stock      ==
+	** ==================== */
 	for (int i = 0; i < path_ext; i++) {
 		// Store to the next row of price matrix
-		prices[row_idx * path_ext + i] = stock->price_stock(i, var_t);
+		prices[row_idx * path_ext + i] = stock->x * stock->s0
+			* exp((stock->mu - 0.5f * stock->var * stock->var) * var_t
+			+ stock->var * sqrtf(var_t) * stock_rn[i]);
 	}
 	row_idx++;
 
@@ -379,6 +382,9 @@ int NestedMonteCarloVaR::execute() {
 	cout << "cvar:" << cvar << endl;
 
 	free(loss);
+
+	free(stock_rn);
+	free(bskop_rn);
 
 	
 

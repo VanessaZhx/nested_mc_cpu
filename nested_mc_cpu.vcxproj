@@ -97,7 +97,6 @@
   <ItemGroup>
     <ClCompile Include="Bond.cpp" />
     <ClCompile Include="NestedMonteCarloVaR.cpp" />
-    <ClCompile Include="Stock.cpp" />
     <CudaCompile Include="RNG.cpp">
       <FileType>CppClass</FileType>
     </CudaCompile>
