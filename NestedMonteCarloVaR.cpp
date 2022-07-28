@@ -16,20 +16,24 @@ NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
 
 NestedMonteCarloVaR::~NestedMonteCarloVaR() {
 	free(prices);
-	free(bond_rn);
+	
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
 	float* bond_y,float sig, int idx) {
-	// Memory allocation
-	bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 
 	// Product initiation
-	bond = new Bond(bond_rn, bond_par, bond_c, bond_m, bond_y, sig);
+	bond = new Bond(bond_par, bond_c, bond_m, bond_y, sig);
 
 	// add start price to the portfolio start price
 	// Start price for bond is priced with original yield curve
-	this->port_p0 += bond->price_bond_with_delta_yield(0) * port_w[idx];
+	float price = 0.0f;
+	for (int i = 0; i < bond_m; i++) {
+		price += bond_c / pow(1.0f + (bond_y[i]) / 100, i + 1);
+	}
+	price += bond_par / pow(1.0f + (bond_y[bond_m - 1]) / 100, bond_m);
+
+	this->port_p0 += price * port_w[idx];
 }
 
 void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu, 
@@ -130,8 +134,9 @@ int NestedMonteCarloVaR::execute() {
 	// == BOND ==
 	// RN is used to move yield curve up/down, N~(0, sigma^2)
 	// [path_ext, 1]
+	bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 	rng->generate_sobol_cpu(bond_rn, 1, path_ext);
-	rng->convert_normal(bond_rn, path_ext, bond->get_sigma());
+	rng->convert_normal(bond_rn, path_ext, bond->sigma);
 
 	// == STOCK ==
 	// RN is used as the external path
@@ -226,9 +231,19 @@ int NestedMonteCarloVaR::execute() {
 	int row_idx = 0;
 
 	// Bond
+	float price = 0.0f;
 	for (int i = 0; i < path_ext; i++) {
 		// Store to first row of prices matrix
-		prices[row_idx * path_ext + i] = bond->price_bond(i);
+		price = 0.0f;
+		// Loop to sum the coupon price until the maturity
+		for (int i = 0; i < bond->bond_m; i++) {
+			price += bond->bond_c / pow(1.0f + (bond->bond_y[i] + bond_rn[i]) / 100, i + 1);
+		}
+		// Add the face value
+		price += bond->bond_par / 
+			pow(1.0f + (bond->bond_y[bond->bond_m - 1] + bond_rn[i]) / 100, bond->bond_m);
+
+		prices[row_idx * path_ext + i] = price;
 		
 	}
 	row_idx++;
@@ -385,7 +400,7 @@ int NestedMonteCarloVaR::execute() {
 
 	free(stock_rn);
 	free(bskop_rn);
-
+	free(bond_rn);
 	
 
 	return 0;

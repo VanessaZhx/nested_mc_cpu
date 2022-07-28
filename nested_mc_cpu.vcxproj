@@ -95,11 +95,8 @@
     <ClInclude Include="Stock.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Bond.cpp" />
     <ClCompile Include="NestedMonteCarloVaR.cpp" />
-    <CudaCompile Include="RNG.cpp">
-      <FileType>CppClass</FileType>
-    </CudaCompile>
+    <CudaCompile Include="RNG.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

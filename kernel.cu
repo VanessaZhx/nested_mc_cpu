@@ -9,7 +9,7 @@ int main()
 	const float var_per = 0.95f;				// 1-percentile
 
 	const int port_n = 3;					// Number of products in the portfolio
-	float port_w[port_n] = { 0.0f, 1.0f, 0.0f };		// Weights of the products in the portfolio
+	float port_w[port_n] = { 1.0f, 0.0f, 0.0f };		// Weights of the products in the portfolio
 														// { bond, stock, basket option}
 	const float risk_free = 0.02f;
 
