@@ -14,8 +14,14 @@ class RNG{
 public:
     // m - simulation times
     // n - dimention
-    int generate_sobol_cpu(float*& data, int m, int n, int seed = 1024, int offset = 1024);
+    ~RNG();
+    int RNG::init();
+    void set_offset(int ofs) { offset = ofs; }
+    int generate_sobol_cpu(float*& data, int m, int n, int offset = 1024);
     int convert_normal(float*& data, int length, float sigma = 1);
+private:
+    curandGenerator_t gen;
+    int offset = 1024;
 };
 
 #endif

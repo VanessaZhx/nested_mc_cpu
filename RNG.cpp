@@ -1,24 +1,27 @@
 #include "RNG.h"
-
-int RNG::generate_sobol_cpu(float*& data, int m, int n, int seed, int offset) {
-    // M-dim of N numbers
+int RNG::init() {
     /* Create pseudo-random number generator */
-    curandGenerator_t gen;
-    CURAND_CALL(curandCreateGeneratorHost(&gen,
-        CURAND_RNG_QUASI_SOBOL32));
+    CURAND_CALL(curandCreateGeneratorHost(&gen, CURAND_RNG_QUASI_SOBOL32));
+}
 
-    /* Set offset and seed */
-    //CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, offset));
-    CURAND_CALL(curandSetGeneratorOffset(gen, offset));
+RNG::~RNG() {
+    curandDestroyGenerator(gen);
+}
 
+int RNG::generate_sobol_cpu(float*& data, int m, int n, int offset) {
+    // M-dim of N numbers
+    /* Set offset*/
+    CURAND_CALL(curandSetGeneratorOffset(gen, this->offset));
+    
     /* Set dimention m */
     CURAND_CALL(curandSetQuasiRandomGeneratorDimensions(gen, m));
 
     /* Generate n floats on device */
     CURAND_CALL(curandGenerateUniform(gen, data, n * m));
 
-    /* Cleanup */
-    CURAND_CALL(curandDestroyGenerator(gen));
+    // offset will be added up with each rng call
+    this->offset += n * m;
+    return 0;
 }
 
 int RNG::convert_normal(float*& data, int length, float sigma) {

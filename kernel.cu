@@ -2,7 +2,7 @@
 
 int main()
 {
-	const int path_ext = 1024;  // Number of the outer MC loops
+	const int path_ext = 3096;  // Number of the outer MC loops
 	const int path_int = 1024;  // Number of the inner MC loops
 
 	const int var_t = 1;					// VaR duration

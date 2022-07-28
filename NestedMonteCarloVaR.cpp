@@ -1,4 +1,9 @@
 #include "NestedMonteCarloVaR.h"
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+
 using namespace std;
 
 NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
@@ -10,6 +15,10 @@ NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
 	this->port_n = port_n;
 	this->port_w = weight;
 	this->risk_free = risk_free;
+
+	rng = new RNG;
+	rng->init();
+	rng->set_offset(1024);
 }
 
 void NestedMonteCarloVaR::bond_init(float bond_par, float bond_c, int bond_m, 
@@ -49,7 +58,6 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 
 	// add to the portfolio price
 	// tempratlly store at the option's RN sequence
-	RNG* rng = new RNG;
 	float* rn = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
 	float* tmp_rn = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
 	rng->generate_sobol_cpu(tmp_rn, bskop_n, path_int);
@@ -109,7 +117,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 	free(value_weighted);
 	free(tmp_rn);
 	free(rn);
-	delete(rng);
+
 
 	this->port_p0 += call * port_w[idx];
 }
@@ -120,7 +128,6 @@ int NestedMonteCarloVaR::execute() {
 	// ====================================================
 	//             Random number preperation
 	// ====================================================
-	RNG* rng = new RNG;
 	
 	// Todo: fix RN seed
 	// 
@@ -177,7 +184,6 @@ int NestedMonteCarloVaR::execute() {
 	);
 
 	free(bskop_tmp_rn);
-	delete(rng);
 
 	// ====================================================
 	//            Outter Monte Carlo Simulation
@@ -285,14 +291,14 @@ int NestedMonteCarloVaR::execute() {
 	// Reset
 	row_idx = 0;
 
-	cout << endl << "Prices:" << endl;
+	/*cout << endl << "Prices:" << endl;
 	for (int i = 0; i < port_n; i++) {
 		for (int j = 0; j < path_ext; j++) {
 			cout << prices[i * path_ext + j] << " ";
 		}
 		cout << endl;
-	}
-	cout << endl << "Today Price:" << endl;
+	}*/
+	cout << endl << "Start Price:" << endl;
 	cout << port_p0 << endl;
 	
 	// ====================================================
@@ -322,22 +328,24 @@ int NestedMonteCarloVaR::execute() {
 		loss,							// Vector Y
 		1);								// Stride within Y
 					
-	cout << endl << "Loss:" << endl;
+	/*cout << endl << "Loss:" << endl;
 	for (int i = 0; i < path_ext; i++) {
 		cout << loss[i] << " ";
 	}
-	cout << endl;
+	cout << endl;*/
 
 	// ====================================================
 	//						Sort
 	// ====================================================
 	std::sort(loss, loss + path_ext);
 
-	cout << endl << "Sorted Loss:" << endl;
+	/*cout << endl << "Sorted Loss:" << endl;
 	for (int i = 0; i < path_ext; i++) {
 		std::cout << loss[i] << " ";
 	}
-	cout << endl;
+	cout << endl;*/
+
+	output_res(loss, path_ext);
 
 
 	// ====================================================
@@ -352,7 +360,7 @@ int NestedMonteCarloVaR::execute() {
 	}
 	cvar /= path_ext - pos;
 
-	cout << endl << endl;
+	cout << endl;
 	cout << "var:" << var << endl;
 	cout << "cvar:" << cvar << endl;
 
@@ -361,6 +369,22 @@ int NestedMonteCarloVaR::execute() {
 	free(stock_rn);
 	free(bskop_rn);
 	free(bond_rn);
+	delete(rng);
 	
 	return 0;
+}
+
+void NestedMonteCarloVaR::output_res(float* data, int len) {
+		// open a file for outputting the matrix
+		ofstream outputfile;
+		outputfile.open("C:/Users/windows/Desktop/res.txt");
+
+		// output the matrix to the file
+		if (outputfile.is_open()) {
+			for (int i = 0; i < len; i++) {
+				outputfile << data[i] << " ";
+			}
+		}
+		outputfile.close();
+		cout << "Result outputed!" << endl;
 }

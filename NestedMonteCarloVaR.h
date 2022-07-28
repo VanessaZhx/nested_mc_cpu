@@ -28,6 +28,8 @@ public:
 
 	int execute();
 
+	void output_res(float* data, int len);
+
 private:
 	int path_ext = 0;  // Number of the outer MC loops
 	int path_int = 0;  // Number of the inner MC loops
@@ -53,6 +55,7 @@ private:
 
 
 	float* prices = NULL; // Pointer to the matrix of each of the product's prices
+	RNG* rng;				// Random number generator
 };
 
 
