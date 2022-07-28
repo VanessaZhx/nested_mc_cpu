@@ -95,7 +95,6 @@
     <ClInclude Include="Stock.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="BasketOption.cpp" />
     <ClCompile Include="Bond.cpp" />
     <ClCompile Include="NestedMonteCarloVaR.cpp" />
     <ClCompile Include="Stock.cpp" />

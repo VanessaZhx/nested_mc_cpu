@@ -70,7 +70,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		path_int,								// result col
 		bskop_n,								// length of "multiple by"
 		1,										// alpha
-		bskop->get_A(),							// A
+		bskop->A,							// A
 		bskop_n,								// col of A
 		tmp_rn,									// B
 		bskop_n,								// col of B
@@ -78,17 +78,46 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		bskop_rn,								// C
 		path_int								// col of C
 	);
-	this->port_p0 += bskop->price_basket_option(path_int, 0) * port_w[idx];
-	/*cout << "Random Numbers:" << endl;
+
+	// Price the start value
+	float* value_each = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
+	float* value_weighted = (float*)malloc((size_t)path_int * sizeof(float));
+
 	for (int i = 0; i < bskop_n; i++) {
 		for (int j = 0; j < path_int; j++) {
-			cout << bskop_rn[i * path_int + j] << " ";
+			int rn_offset = i * path_int + j;
+			value_each[i * path_int + j] = bskop_stocks[i]
+				.price_single_stock_with_z(bskop_rn[rn_offset], 1);
 		}
-		cout << endl;
 	}
-	cout << endl;*/
+
+	cblas_sgemv(CblasRowMajor,		// Specifies row-major
+		CblasTrans,					// Specifies whether to transpose matrix A.
+		bskop_n,					// A rows
+		path_int,							// A col
+		1,							// alpha	
+		value_each,					// A
+		path_int,					// The size of the first dimension of matrix A.
+		bskop_w,							// Vector X.
+		1,						// Stride within X. 
+		0,						// beta
+		value_weighted,			// Vector Y
+		1						// Stride within Y
+	);
+
+	float call = 0.0f;
+	for (int i = 0; i < path_int; i++) {
+		call += (value_weighted[i] > bskop_k) ? (value_weighted[i] - bskop_k) : 0;
+	}
+	call /= bskop_n;
+
+
+	free(value_each);
+	free(value_weighted);
 	free(tmp_rn);
 	delete(rng);
+
+	this->port_p0 += call * port_w[idx];
 }
 
 int NestedMonteCarloVaR::execute() {
@@ -124,7 +153,7 @@ int NestedMonteCarloVaR::execute() {
 	// [path_ext, n]
 	// Second: inner loop, to reprice option
 	// [path_ext, [path_int, n]] => [path_ext * path_int, n]
-	int bsk_n = bskop->get_n();
+	int bsk_n = bskop->n;
 	// get 
 	float* bskop_ext_rn = (float*)malloc((size_t)path_ext * bsk_n * sizeof(float));
 	rng->generate_sobol_cpu(bskop_ext_rn, bsk_n, path_ext);
@@ -168,7 +197,7 @@ int NestedMonteCarloVaR::execute() {
 		path_ext * path_int,				// result col
 		bsk_n,								// length of "multiple by"
 		1,									// alpha
-		bskop->get_A(),						// A
+		bskop->A,							// A
 		bsk_n,								// col of A
 		bskop_tmp_rn,						// B
 		bsk_n,								// col of B
