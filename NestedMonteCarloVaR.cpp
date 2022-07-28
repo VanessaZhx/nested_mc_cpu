@@ -49,17 +49,15 @@ void NestedMonteCarloVaR::stock_init(float stock_s0, float stock_mu,
 void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks, 
 	float* bskop_cov, float bskop_k, float* bskop_w,int bskop_t, int idx) {
 
-	// Memory allocation
-	bskop_rn = (float*)malloc((size_t)path_ext * path_int * bskop_n * sizeof(float));
-
 	// Product initiation
-	bskop = new BasketOption(bskop_rn, bskop_n, bskop_stocks, bskop_cov,  bskop_k, bskop_w);
+	bskop = new BasketOption(bskop_n, bskop_stocks, bskop_cov,  bskop_k, bskop_w);
 
 	this->bskop_t = bskop_t;
 
 	// add to the portfolio price
 	// tempratlly store at the option's RN sequence
 	RNG* rng = new RNG;
+	float* rn = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
 	float* tmp_rn = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
 	rng->generate_sobol_cpu(tmp_rn, bskop_n, path_int);
 	rng->convert_normal(tmp_rn, path_int * bskop_n);
@@ -75,7 +73,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		tmp_rn,									// B
 		bskop_n,								// col of B
 		0,										// beta
-		bskop_rn,								// C
+		rn,								// C
 		path_int								// col of C
 	);
 
@@ -87,7 +85,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 		for (int j = 0; j < path_int; j++) {
 			int rn_offset = i * path_int + j;
 			value_each[i * path_int + j] = bskop_stocks[i]
-				.price_single_stock_with_z(bskop_rn[rn_offset], 1);
+				.price_single_stock_with_z(rn[rn_offset], 1);
 		}
 	}
 
@@ -115,10 +113,13 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 	free(value_each);
 	free(value_weighted);
 	free(tmp_rn);
+	free(rn);
 	delete(rng);
 
 	this->port_p0 += call * port_w[idx];
 }
+
+
 
 int NestedMonteCarloVaR::execute() {
 	// TODO: CLEAN CLASS DEFINATION && REDUCE FUNCTION CALL!!!
@@ -147,49 +148,27 @@ int NestedMonteCarloVaR::execute() {
 	//}
 	//cout << endl;
 
-	// Basket Option
-	// Need two set of random numbers
-	// First: to reprice underlying stocks at H(use as S0 in inner)
-	// [path_ext, n]
-	// Second: inner loop, to reprice option
-	// [path_ext, [path_int, n]] => [path_ext * path_int, n]
+	/*== Basket Option ==
+	** Need two set of random numbers
+	** First: to reprice underlying stocks at H(use as S0 in inner)
+	** [path_ext, n]
+	** Second: inner loop, to reprice option
+	** [path_ext, [path_int, n]] => [path_ext * path_int, n]
+	*/ 
 	int bsk_n = bskop->n;
-	// get 
+	// Random number sequence for basket option(outer loop)
 	float* bskop_ext_rn = (float*)malloc((size_t)path_ext * bsk_n * sizeof(float));
 	rng->generate_sobol_cpu(bskop_ext_rn, bsk_n, path_ext);
 	rng->convert_normal(bskop_ext_rn, path_ext * bsk_n);
 
+	// Random number sequence for basket option(inner loop)
+	bskop_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
 	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
 	rng->generate_sobol_cpu(bskop_tmp_rn, bsk_n, path_ext * path_int);
-
-	/*cout << "Random Numbers:" << endl;
-	for (int i = 0; i < path_ext * path_int; i++) {
-		for (int j = 0; j < bsk_n; j++) {
-			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
-		}
-		cout << endl;
-	}*/
-
 	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
 
-	cout << "Random Numbers:" << endl;
-	for (int i = 0; i < path_ext* path_int; i++) {
-		for (int j = 0; j < bsk_n; j++) {
-			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
-		}
-		cout << endl;
-	}
-
-	/*cout << "A:" << endl;
-	for (int i = 0; i < bsk_n; i++) {
-		for (int j = 0; j < bsk_n; j++) {
-			cout << bskop->get_A()[i * bsk_n + j] << " ";
-		}
-		cout << endl;
-	}*/
-
+	// Covariance transformation
 	// A[n * n]*rn[n * (path_ext * path_int)]
-	
 	cblas_sgemm(CblasRowMajor,
 		CblasNoTrans,
 		CblasTrans,
@@ -208,6 +187,30 @@ int NestedMonteCarloVaR::execute() {
 
 	free(bskop_tmp_rn);
 
+	/*cout << "Random Numbers:" << endl;
+	for (int i = 0; i < path_ext * path_int; i++) {
+		for (int j = 0; j < bsk_n; j++) {
+			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
+		}
+		cout << endl;
+	}
+	
+	cout << "Random Numbers:" << endl;
+	for (int i = 0; i < path_ext* path_int; i++) {
+		for (int j = 0; j < bsk_n; j++) {
+			cout << bskop_tmp_rn[i * bsk_n + j] << " ";
+		}
+		cout << endl;
+	}
+	
+	cout << "A:" << endl;
+	for (int i = 0; i < bsk_n; i++) {
+		for (int j = 0; j < bsk_n; j++) {
+			cout << bskop->get_A()[i * bsk_n + j] << " ";
+		}
+		cout << endl;
+	}
+
 	cout << "Random Numbers:" << endl;
 	for (int i = 0; i < bsk_n; i++) {
 		for (int j = 0; j < path_ext * path_int; j++) {
@@ -215,6 +218,8 @@ int NestedMonteCarloVaR::execute() {
 		}
 		cout << endl;
 	}
+	*/
+
 
 	// ===================================================================
 	// Outter Monte Carlo Simulation
@@ -236,11 +241,14 @@ int NestedMonteCarloVaR::execute() {
 	}
 	row_idx++;
 
-	// Basket Options
+	/* ====================
+	** == Basket Options ==
+	** ==================== */ 
 	float* bskop_stock_price = (float*)malloc((size_t)bsk_n * sizeof(float));
 	float* value_each = (float*)malloc((size_t)path_int * bskop->n * sizeof(float));
 	float* value_weighted = (float*)malloc((size_t)path_int * sizeof(float));
 	Stock* s;
+
 	for (int i = 0; i < path_ext; i++) {
 		// reprice underlying stocks
 		// will be used in inner as s0
@@ -250,7 +258,6 @@ int NestedMonteCarloVaR::execute() {
 				* exp((s->mu- 0.5f * s->var * s->var)* var_t 
 					+ s->var * sqrtf(var_t) * bskop_ext_rn[i* bskop->n + j]);
 		}
-
 		
 		// Inner loop
 		// The random number has already been transformed with cov
@@ -262,10 +269,8 @@ int NestedMonteCarloVaR::execute() {
 				int rn_offset = i * path_int * bskop->n + j * path_int + k;
 				value_each[j * path_int + k] = s->x * 
 					bskop_stock_price[j] * exp((s->mu - 0.5f * s->var * s->var) * bskop_t
-						+ s->var * sqrtf(bskop_t) * bskop->rn[rn_offset]);
-				//cout << value_each[i * path_int + j] << ' ';
+						+ s->var * sqrtf(bskop_t) * bskop_rn[rn_offset]);
 			}
-			//cout << endl;
 		}
 
 		// Multiply with weight
@@ -284,12 +289,6 @@ int NestedMonteCarloVaR::execute() {
 			value_weighted,				// Vector Y
 			1							// Stride within Y
 		);
-
-		/*cout << "vw:" << endl;
-		for (int i = 0; i < path_int; i++) {
-			cout << value_weighted[i] << ' ';
-		}
-		cout << endl;*/
 
 		// Determine the price with stirke
 		// If the price is less than k, don't execute

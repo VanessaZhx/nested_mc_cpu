@@ -14,13 +14,11 @@ using namespace std;
 class BasketOption {
 public:
 
-	BasketOption(float*& data, int n, Stock* stocks, float* cov, float k, float* w) {
+	BasketOption(int n, Stock* stocks, float* cov, float k, float* w) {
 		this->n = n;
 		this->stocks = stocks;
 		this->k = k;
 		this->w = w;
-
-		rn = data;
 
 		//// Cholesky decompose by lapack
 		// The result will be storeed in cov
@@ -47,7 +45,7 @@ public:
 	float* w;			// Weight of each stock
 	Stock* stocks;		// Underlying stocks
 	float* A;			// Cholesky decomposistion of the covariance matrix
-	float* rn;			// Random number list
+	//float* rn;			// Random number list
 
 };
 
