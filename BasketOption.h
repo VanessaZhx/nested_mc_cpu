@@ -26,12 +26,12 @@ public:
 		// The result will be storeed in cov
 		// However the upper part won't be set to 0 automatically
 		LAPACKE_spotrf(LAPACK_ROW_MAJOR, 'L', n, cov, n);
-		for (int i = 0; i < n; i++) {
+		/*for (int i = 0; i < n; i++) {
 			for (int j = 0; j < n; j++) {
 				cout << cov[i * n + j] << " ";
 			}
 			cout << endl;
-		}
+		}*/
 
 		// Copy the cholesky result to A
 		A = (float*)malloc((size_t)n * n * sizeof(float));
@@ -56,10 +56,11 @@ public:
 
 	float* get_A() { return A; }
 	int get_n() { return n; }
+	Stock* get_stocks(){ return stocks; }
 
 	float price_basket_option(int path_int, int offset) {
-		float *value_each = (float*)malloc((size_t)path_int * n * sizeof(float));
-		float *value_weighted = (float*)malloc((size_t)path_int* sizeof(float));
+		float* value_each = (float*)malloc((size_t)path_int * n * sizeof(float));
+		float* value_weighted = (float*)malloc((size_t)path_int * sizeof(float));
 
 		// The random number has already been transformed with cov
 		// Calculate each value with the correlated-random numbers
@@ -76,8 +77,6 @@ public:
 		// Multiply with weight
 		// Value_each[n][path_int]
 		// value_each[inter * n] * weight[n * 1]
-		float va[2] = { 100, 200 };
-		float temp[2] = { 0, 1 };
 		cblas_sgemv(CblasRowMajor,		// Specifies row-major
 			CblasTrans,					// Specifies whether to transpose matrix A.
 			n,					// A rows
@@ -91,7 +90,7 @@ public:
 			value_weighted,			// Vector Y
 			1						// Stride within Y
 		);
-		
+
 		/*cout << "vw:" << endl;
 		for (int i = 0; i < path_int; i++) {
 			cout << value_weighted[i] << ' ';
@@ -113,12 +112,12 @@ public:
 
 		return call;
 	}
-private:
+public:
 	int n;				// Number of stocks in the basket
-	Stock* stocks;		// Underlying stocks
+	
 	float k;			// Option execute price(strike)
 	float* w;			// Weight of each stock
-
+	Stock* stocks;		// Underlying stocks
 	float* A;			// Cholesky decomposistion of the covariance matrix
 	float* rn;			// Random number list
 

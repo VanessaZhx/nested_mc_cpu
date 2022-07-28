@@ -26,7 +26,7 @@ public:
 					int stock_x, int idx);
 
 	void bskop_init(int bskop_n, Stock* bskop_stocks, float* bskop_cov, 
-					float bskop_k, float* bskop_w, int idx);
+					float bskop_k, float* bskop_w, int bskop_t, int idx);
 
 	int execute();
 
@@ -50,6 +50,7 @@ private:
 	float* stock_rn = NULL;		// Pointer to the stock's RN sequence
 
 	BasketOption* bskop = NULL;
+	int bskop_t = 0;					// Maturity of option
 	float* bskop_rn = NULL;		// Pointer to the basket option's RN sequence
 
 

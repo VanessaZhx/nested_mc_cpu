@@ -16,7 +16,7 @@ public:
 
 	float price_single_stock_with_z(float z, int t);
 
-private:
+public:
 	float s0;
 	float mu;
 	float var;
