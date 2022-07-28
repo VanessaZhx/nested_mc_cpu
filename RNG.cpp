@@ -1,6 +1,7 @@
 #include "RNG.h"
 
 int RNG::generate_sobol_cpu(float*& data, int m, int n, int seed, int offset) {
+    // M-dim of N numbers
     /* Create pseudo-random number generator */
     curandGenerator_t gen;
     CURAND_CALL(curandCreateGeneratorHost(&gen,
@@ -10,11 +11,11 @@ int RNG::generate_sobol_cpu(float*& data, int m, int n, int seed, int offset) {
     //CURAND_CALL(curandSetPseudoRandomGeneratorSeed(gen, offset));
     CURAND_CALL(curandSetGeneratorOffset(gen, offset));
 
-    /* Set dimention */
-    CURAND_CALL(curandSetQuasiRandomGeneratorDimensions(gen, n));
+    /* Set dimention m */
+    CURAND_CALL(curandSetQuasiRandomGeneratorDimensions(gen, m));
 
-    /* Generate m floats on device */
-    CURAND_CALL(curandGenerateUniform(gen, data, m * n));
+    /* Generate n floats on device */
+    CURAND_CALL(curandGenerateUniform(gen, data, n * m));
 
     /* Cleanup */
     CURAND_CALL(curandDestroyGenerator(gen));

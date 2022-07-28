@@ -102,7 +102,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 	for (int i = 0; i < path_int; i++) {
 		call += (value_weighted[i] > bskop_k) ? (value_weighted[i] - bskop_k) : 0;
 	}
-	call /= bskop_n;
+	call /= path_int;
 
 
 	free(value_each);
@@ -137,7 +137,7 @@ int NestedMonteCarloVaR::execute() {
 	// [path_ext, var_t]
 	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
 	rng->generate_sobol_cpu(stock_rn, var_t, path_ext);
-	rng->convert_normal(stock_rn, path_ext);
+	rng->convert_normal(stock_rn, var_t * path_ext);
 
 	/*== Basket Option ==
 	** Need two set of random numbers
@@ -274,7 +274,7 @@ int NestedMonteCarloVaR::execute() {
 		}
 		
 		// Store to the next row of price matrix
-		prices[row_idx * path_ext + i] = call / bskop->n;
+		prices[row_idx * path_ext + i] = call / path_int;
 	}
 
 	free(bskop_ext_rn);

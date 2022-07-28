@@ -2,14 +2,14 @@
 
 int main()
 {
-	const int path_ext = 5;  // Number of the outer MC loops
-	const int path_int = 3;  // Number of the inner MC loops
+	const int path_ext = 1024;  // Number of the outer MC loops
+	const int path_int = 1024;  // Number of the inner MC loops
 
 	const int var_t = 1;					// VaR duration
 	const float var_per = 0.95f;				// 1-percentile
 
 	const int port_n = 3;					// Number of products in the portfolio
-	float port_w[port_n] = { 1.0f, 0.0f, 0.0f };		// Weights of the products in the portfolio
+	float port_w[port_n] = { 0.4f, 0.3f, 0.3f };		// Weights of the products in the portfolio
 														// { bond, stock, basket option}
 	const float risk_free = 0.02f;
 
@@ -30,7 +30,7 @@ int main()
 	Stock* s1 = new Stock(stock_s0, stock_mu, stock_var, 100);
 	Stock* s2 = new Stock(stock_s0, stock_mu, stock_var, 100);
 	const int bskop_n = 2;								// Number of stocks in basket
-	const float bskop_k = 31000.0f;						// Execution price
+	const float bskop_k = 3100.0f;						// Execution price
 	const int bskop_t = 1;								// Maturity of basket option
 	Stock bskop_stocks[bskop_n] = { *s1, *s2 };			// List of stocks
 	float bskop_cov[bskop_n * bskop_n] = { 1.0f, 0.5f,	
