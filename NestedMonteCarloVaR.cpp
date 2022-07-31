@@ -12,7 +12,7 @@ NestedMonteCarloVaR::NestedMonteCarloVaR(int pext, int pint,
 	this->risk_free = risk_free;
 
 	rng = new RNG;
-	rng->init();
+	rng->init_cpu();
 	rng->set_offset(1024);
 }
 
@@ -54,7 +54,7 @@ void NestedMonteCarloVaR::bskop_init(int bskop_n, Stock* bskop_stocks,
 	// Simulate start price
 	float* rn = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
 	float* tmp_rn = (float*)malloc((size_t)path_int * bskop_n * sizeof(float));
-	rng->generate_sobol_cpu(tmp_rn, bskop_n, path_int);
+	rng->generate_sobol(tmp_rn, bskop_n, path_int);
 	rng->convert_normal(tmp_rn, path_int * bskop_n);
 	cblas_sgemm(CblasRowMajor,
 		CblasNoTrans,
@@ -126,7 +126,7 @@ void NestedMonteCarloVaR::barop_int(Stock* barop_stock, float barop_k,
 	// Simulate start price
 	// Need one round of inner loop to price start value
 	float* temp_rn = (float*)malloc((size_t)path_int * barop_t * sizeof(float));
-	rng->generate_sobol_cpu(temp_rn, barop_t, path_int);
+	rng->generate_sobol(temp_rn, barop_t, path_int);
 	rng->convert_normal(temp_rn, path_int * barop_t);
 
 	Stock* s = barop_stock;
@@ -173,7 +173,7 @@ double NestedMonteCarloVaR::execute() {
 	** [path_ext, 1]
 	*/
 	bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
-	rng->generate_sobol_cpu(bond_rn, 1, path_ext);
+	rng->generate_sobol(bond_rn, 1, path_ext);
 	rng->convert_normal(bond_rn, path_ext, bond->sigma);
 
 	/* == STOCK ==
@@ -182,7 +182,7 @@ double NestedMonteCarloVaR::execute() {
 	** [path_ext, var_t]
 	*/
 	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
-	rng->generate_sobol_cpu(stock_rn, var_t, path_ext);
+	rng->generate_sobol(stock_rn, var_t, path_ext);
 	rng->convert_normal(stock_rn, var_t * path_ext);
 
 	/* == Basket Option ==
@@ -195,13 +195,13 @@ double NestedMonteCarloVaR::execute() {
 	int bsk_n = bskop->n;
 	// Random number sequence for basket option(outer loop)
 	float* bskop_ext_rn = (float*)malloc((size_t)path_ext * bsk_n * sizeof(float));
-	rng->generate_sobol_cpu(bskop_ext_rn, bsk_n, path_ext);
+	rng->generate_sobol(bskop_ext_rn, bsk_n, path_ext);
 	rng->convert_normal(bskop_ext_rn, path_ext * bsk_n);
 
 	// Random number sequence for basket option(inner loop)
 	bskop_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
 	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
-	rng->generate_sobol_cpu(bskop_tmp_rn, bsk_n, path_ext * path_int);
+	rng->generate_sobol(bskop_tmp_rn, bsk_n, path_ext * path_int);
 	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
 
 	// Covariance transformation
@@ -233,12 +233,12 @@ double NestedMonteCarloVaR::execute() {
 	*/ 
 	// Random number sequence for barrier option(outer loop)
 	float* barop_ext_rn = (float*)malloc((size_t)path_ext * var_t * sizeof(float));
-	rng->generate_sobol_cpu(barop_ext_rn, var_t, path_ext);
+	rng->generate_sobol(barop_ext_rn, var_t, path_ext);
 	rng->convert_normal(barop_ext_rn, path_ext * var_t);
 
 	// Random number sequence for barrier option(inner loop)
 	barop_rn = (float*)malloc((size_t)path_ext * path_int * barop_t * sizeof(float));
-	rng->generate_sobol_cpu(barop_rn, barop_t, path_ext * path_int);
+	rng->generate_sobol(barop_rn, barop_t, path_ext * path_int);
 	rng->convert_normal(barop_rn, path_ext * path_int * barop_t);
 
 	/*cout << "Random Numbers:\n";
@@ -420,7 +420,7 @@ double NestedMonteCarloVaR::execute() {
 	row_idx = 0;
 	rng->set_offset(1024);
 
-	/*cout << endl << "Prices:" << endl;
+	cout << endl << "Prices:" << endl;
 	for (int i = 0; i < port_n; i++) {
 		for (int j = 0; j < path_ext; j++) {
 			cout << prices[i * path_ext + j] << " ";
@@ -428,7 +428,7 @@ double NestedMonteCarloVaR::execute() {
 		cout << endl;
 	}
 	cout << endl << "Start Price:" << endl;
-	cout << port_p0 << endl;*/
+	cout << port_p0 << endl;
 	
 
 
@@ -480,7 +480,7 @@ double NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;*/
 
-	output_res(loss, path_ext);
+	//output_res(loss, path_ext);
 
 
 	// ====================================================

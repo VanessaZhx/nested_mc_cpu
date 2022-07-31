@@ -2,7 +2,7 @@
 #ifndef NMC_H
 #define NMC_H
 
-#include "RNG.h"
+#include "RNG.cuh"
 #include "Bond.h"
 #include "Stock.h"
 #include "BasketOption.h"

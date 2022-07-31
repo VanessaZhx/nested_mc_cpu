@@ -4,8 +4,8 @@ int main()
 {
 	const int exp_times = 1;   // Total times of MC
 
-	const int path_ext = 4 * 1024;  // Number of the outer MC loops
-	const int path_int = 4 * 1024;  // Number of the inner MC loops
+	const int path_ext = 10;  // Number of the outer MC loops
+	const int path_int = 1024;  // Number of the inner MC loops
 
 	const int var_t = 1;					// VaR duration
 	const float var_per = 0.95f;				// 1-percentile
@@ -27,7 +27,7 @@ int main()
 	const float stock_s0 = 300.0f;			// Start value of stock
 	const float stock_mu = risk_free;			// risk free(or mean)
 	const float stock_var = 0.13f;			// Volatility
-	const int stock_x = 20;					// Number of shares
+	const int stock_x = 100;					// Number of shares
 
 	Stock* s1 = new Stock(stock_s0, stock_mu, stock_var, 100);
 	Stock* s2 = new Stock(stock_s0, stock_mu, stock_var, 100);
