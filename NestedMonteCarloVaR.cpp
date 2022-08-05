@@ -266,9 +266,9 @@ double NestedMonteCarloVaR::execute() {
 	for (int i = 0; i < path_ext; i++) {
 		price = 0.0f;
 		// Loop to sum the coupon price until the maturity
-		for (int i = 0; i < bond->bond_m; i++) {
+		for (int j = 0; j < bond->bond_m; j++) {
 			price += bond->bond_c / 
-				powf(1.0f + (bond->bond_y[i] + bond_rn[i]) / 100, float(i + 1));
+				powf(1.0f + (bond->bond_y[j] + bond_rn[i]) / 100, float(i + 1));
 		}
 		// Add the face value
 		price += bond->bond_par / 
