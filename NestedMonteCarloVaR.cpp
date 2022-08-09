@@ -323,7 +323,7 @@ double NestedMonteCarloVaR::execute() {
 		// random numbers[n][path_int]
 		for (int j = 0; j < bskop->n; j++) {
 			s = &(bskop->stocks[j]);
-			offset = j * (path_int + 1) * path_ext + i * (path_int + 1);
+			offset = j * (path_int + 1) * path_ext + i * (path_int + 1) + 1;
 			for (int k = 0; k < path_int; k++) {
 				value_each[j * path_int + k] = s->x * 
 					bskop_stock_price[j] * exp((s->mu - 0.5f * s->var * s->var) * bskop_t
