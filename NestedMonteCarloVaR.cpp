@@ -194,15 +194,15 @@ double NestedMonteCarloVaR::execute() {
 	*/ 
 	int bsk_n = bskop->n;
 	// Random number sequence for basket option(outer loop)
-	float* bskop_ext_rn = (float*)malloc((size_t)path_ext * bsk_n * sizeof(float));
+	/*float* bskop_ext_rn = (float*)malloc((size_t)path_ext * bsk_n * sizeof(float));
 	rng->generate_sobol(bskop_ext_rn, bsk_n, path_ext);
-	rng->convert_normal(bskop_ext_rn, path_ext * bsk_n);
+	rng->convert_normal(bskop_ext_rn, path_ext * bsk_n);*/
 
 	// Random number sequence for basket option(inner loop)
-	bskop_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
-	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
-	rng->generate_sobol(bskop_tmp_rn, bsk_n, path_ext * path_int);
-	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
+	bskop_rn = (float*)malloc((size_t)path_ext * (path_int + 1) * bsk_n * sizeof(float));
+	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * (path_int + 1) * bsk_n * sizeof(float));
+	rng->generate_sobol(bskop_tmp_rn, bsk_n, path_ext * (path_int + 1));
+	rng->convert_normal(bskop_tmp_rn, path_ext * (path_int + 1) * bsk_n);
 
 	// Covariance transformation
 	// A[n * n]*rn[n * (path_ext * path_int)]
@@ -210,7 +210,7 @@ double NestedMonteCarloVaR::execute() {
 		CblasNoTrans,
 		CblasTrans,
 		bsk_n,								// result row
-		path_ext * path_int,				// result col
+		path_ext * (path_int + 1),			// result col
 		bsk_n,								// length of "multiple by"
 		1,									// alpha
 		bskop->A,							// A
@@ -219,7 +219,7 @@ double NestedMonteCarloVaR::execute() {
 		bsk_n,								// col of B
 		0,									// beta
 		bskop_rn,							// C
-		path_ext * path_int					// col of C
+		path_ext * (path_int + 1)			// col of C
 	);
 
 	free(bskop_tmp_rn);
@@ -301,20 +301,20 @@ double NestedMonteCarloVaR::execute() {
 	/* ====================
 	** == Basket Option ==
 	** ==================== */ 
-	// TODO: don't add x when comparing S and K
 	float* bskop_stock_price = (float*)malloc((size_t)bsk_n * sizeof(float));
 	float* value_each = (float*)malloc((size_t)path_int * bskop->n * sizeof(float));
 	float* value_weighted = (float*)malloc((size_t)path_int * sizeof(float));
 	Stock* s;
-
+	int offset = 0;
 	for (int i = 0; i < path_ext; i++) {
 		// reprice underlying stocks
 		// will be used in inner as s0
 		for (int j = 0; j < bskop->n; j++) {
 			s = &(bskop->stocks[j]);
+			offset = j * (path_int + 1) * path_ext + i *(path_int + 1);
 			bskop_stock_price[j] = s->s0
 				* exp((s->mu- 0.5f * s->var * s->var)* var_t 
-					+ s->var * sqrtf(float(var_t)) * bskop_ext_rn[i* bskop->n + j]);
+					+ s->var * sqrtf(float(var_t)) * bskop_rn[offset]);
 		}
 		
 		// Inner loop
@@ -323,11 +323,11 @@ double NestedMonteCarloVaR::execute() {
 		// random numbers[n][path_int]
 		for (int j = 0; j < bskop->n; j++) {
 			s = &(bskop->stocks[j]);
+			offset = j * (path_int + 1) * path_ext + i * (path_int + 1);
 			for (int k = 0; k < path_int; k++) {
-				int rn_offset = i * path_int * bskop->n + j * path_int + k;
 				value_each[j * path_int + k] = s->x * 
 					bskop_stock_price[j] * exp((s->mu - 0.5f * s->var * s->var) * bskop_t
-						+ s->var * sqrtf(float(bskop_t)) * bskop_rn[rn_offset]);
+						+ s->var * sqrtf(float(bskop_t)) * bskop_rn[j + k]);
 			}
 		}
 
@@ -359,7 +359,7 @@ double NestedMonteCarloVaR::execute() {
 		prices[row_idx * path_ext + i] = call / path_int;
 	}
 
-	free(bskop_ext_rn);
+	//free(bskop_ext_rn);
 	free(value_each);
 	free(value_weighted);
 	free(bskop_stock_price);
