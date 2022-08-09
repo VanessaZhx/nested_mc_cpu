@@ -327,7 +327,7 @@ double NestedMonteCarloVaR::execute() {
 			for (int k = 0; k < path_int; k++) {
 				value_each[j * path_int + k] = s->x * 
 					bskop_stock_price[j] * exp((s->mu - 0.5f * s->var * s->var) * bskop_t
-						+ s->var * sqrtf(float(bskop_t)) * bskop_rn[j + k]);
+						+ s->var * sqrtf(float(bskop_t)) * bskop_rn[offset + k]);
 			}
 		}
 
