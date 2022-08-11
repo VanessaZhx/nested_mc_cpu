@@ -1,11 +1,37 @@
 ﻿#include "NestedMonteCarloVaR.h"
+#include <intrin.h>
+
 
 int main()
 {
 	const int exp_times = 1;   // Total times of MC
 
-	const int path_ext = 10;  // Number of the outer MC loops
+	const int path_ext = 1024;  // Number of the outer MC loops
 	const int path_int = 1024;  // Number of the inner MC loops
+
+	cout << endl << "== SET UP ==" << endl;
+	cout << "Experiment Times: " << exp_times << endl;
+	cout << "Path External: " << path_ext << endl;
+	cout << "Path Internal: " << path_int << endl;
+
+	cout << endl << "== DEVICE ==" << endl;
+	int cpuInfo[4] = { -1 };
+	char cpu_manufacture[32] = { 0 };
+	char cpu_type[32] = { 0 };
+	char cpu_freq[32] = { 0 };
+
+	__cpuid(cpuInfo, 0x80000002);
+	memcpy(cpu_manufacture, cpuInfo, sizeof(cpuInfo));
+
+	__cpuid(cpuInfo, 0x80000003);
+	memcpy(cpu_type, cpuInfo, sizeof(cpuInfo));
+
+	__cpuid(cpuInfo, 0x80000004);
+	memcpy(cpu_freq, cpuInfo, sizeof(cpuInfo));
+
+	cout << "CPU manufacture: " << cpu_manufacture << std::endl;
+	cout << "CPU type: " << cpu_type << std::endl;
+	cout << "CPU main frequency: " << cpu_freq << std::endl;
 
 	const int var_t = 1;					// VaR duration
 	const float var_per = 0.95f;				// 1-percentile
@@ -13,6 +39,7 @@ int main()
 	const int port_n = 4;					// Number of products in the portfolio
 	float port_w[port_n] = { 0.3f, 0.3f, 0.1f, 0.3f };		// Weights of the products in the portfolio
 														// { bond, stock, basket option, barrier option}
+	//float port_w[port_n] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	const float risk_free = 0.02f;
 
 	const float bond_par = 1000.0f;			// Par value of bond
@@ -41,7 +68,7 @@ int main()
 
 	const float barop_k = 310.0f;				// Execution price
 	const float barop_h = 320.0f;				// Barrier
-	const int barop_t = 10;						// Maturity(steps of inner path)
+	const int barop_t = 30;						// Maturity(steps of inner path)
 		
 	NestedMonteCarloVaR* mc = new NestedMonteCarloVaR(
 		path_ext,path_int,
@@ -54,10 +81,15 @@ int main()
 	mc->bskop_init(bskop_n, bskop_stocks, bskop_cov, bskop_k, bskop_w, bskop_t, 2);
 	mc->barop_int(s1, barop_k, barop_h, barop_t, 3);
 
+	cout << endl << "== EXECUTION ==" << endl;
+
+	// Warm up
+	mc->execute();
+
 	double exe_time = 0.0;
 	for (int i = 0; i < exp_times; i++) {
-		exe_time = mc->execute();
-		cout << "EXECUTION TIME: " << exe_time << " ms." << endl;
+		exe_time += mc->execute();
 	}
+	cout << "AVG EXECUTION TIME: " << exe_time / exp_times << " ms." << endl;
     return 0;
 }

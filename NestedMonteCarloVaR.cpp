@@ -421,7 +421,7 @@ double NestedMonteCarloVaR::execute() {
 	row_idx = 0;
 	rng->set_offset(1024);
 
-	cout << endl << "Prices:" << endl;
+	/*cout << endl << "Prices:" << endl;
 	for (int i = 0; i < port_n; i++) {
 		for (int j = 0; j < path_ext; j++) {
 			cout << prices[i * path_ext + j] << " ";
@@ -429,7 +429,7 @@ double NestedMonteCarloVaR::execute() {
 		cout << endl;
 	}
 	cout << endl << "Start Price:" << endl;
-	cout << port_p0 << endl;
+	cout << port_p0 << endl;*/
 	
 
 
@@ -453,6 +453,7 @@ double NestedMonteCarloVaR::execute() {
 		port_n,							// A rows
 		path_ext,						// A col
 		-exp(-1 * risk_free* var_t),	// alpha
+		//1,	// alpha
 		prices,							// A
 		path_ext,						// The size of the first dimension of matrix A.
 		port_w,							// Vector X.
