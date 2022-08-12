@@ -6,13 +6,48 @@ int main(int argc, char* argv[])
 {
 	int exp_times = 20;   // Total times of MC
 
-	int path_ext = 1024;  // Number of the outer MC loops
-	int path_int = 1024;  // Number of the inner MC loops
+	int path_ext = 10;  // Number of the outer MC loops
+	int path_int = 10;  // Number of the inner MC loops
 
 	// input: path_ext, path_int, exp_times
-	if (argc >= 2)  path_ext = atoi(argv[1]);
+	/*if (argc >= 2)  path_ext = atoi(argv[1]);
 	if (argc >= 3)  path_int = atoi(argv[2]);
-	if (argc >= 4)  exp_times = atoi(argv[3]);
+	if (argc >= 4)  exp_times = atoi(argv[3]);*/
+
+	int cnt = 0;
+
+	for (int i = 1; i < argc; i++) {
+		char* pchar = argv[i];
+		switch (pchar[0]) {			// Decide option type
+		case '-': {					// For option
+			switch (pchar[1]) {
+			default:		// unrecognisable - show usage
+				cout << endl << "===================== USAGE =====================" << endl;
+				cout << "Enter up to 3 numbers for [path_ext, path_int, exp_times]" << endl;
+				cout << "Default setup: [" << path_ext << ", " << path_int << ", "
+					<< exp_times << "]" << endl;
+				return 0;
+			}
+			break;
+		}
+		default:				// For numbers(not concerning rubust so
+								// char will be treated as numbers)
+			switch (cnt) {
+			case 0:
+				path_ext = atoi(argv[i]);
+				break;
+			case 1:
+				path_int = atoi(argv[i]);
+				break;
+			case 2:
+				exp_times = atoi(argv[i]);
+				break;
+			default:
+				break;
+			}
+			cnt++;
+		}
+	}
 
 	cout << endl << "== SET UP ==" << endl;
 	cout << "Experiment Times: " << exp_times << endl;
