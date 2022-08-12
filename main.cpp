@@ -1,6 +1,11 @@
 ﻿#include "NestedMonteCarloVaR.h"
-#include <intrin.h>
 
+
+#if defined(WIN64)
+#include <intrin.h>
+#endif
+
+void getInfo();
 
 int main(int argc, char* argv[])
 {
@@ -55,23 +60,7 @@ int main(int argc, char* argv[])
 	cout << "Path Internal: " << path_int << endl;
 
 	cout << endl << "== DEVICE ==" << endl;
-	int cpuInfo[4] = { -1 };
-	char cpu_manufacture[32] = { 0 };
-	char cpu_type[32] = { 0 };
-	char cpu_freq[32] = { 0 };
-
-	__cpuid(cpuInfo, 0x80000002);
-	memcpy(cpu_manufacture, cpuInfo, sizeof(cpuInfo));
-
-	__cpuid(cpuInfo, 0x80000003);
-	memcpy(cpu_type, cpuInfo, sizeof(cpuInfo));
-
-	__cpuid(cpuInfo, 0x80000004);
-	memcpy(cpu_freq, cpuInfo, sizeof(cpuInfo));
-
-	cout << "CPU manufacture: " << cpu_manufacture << std::endl;
-	cout << "CPU type: " << cpu_type << std::endl;
-	cout << "CPU main frequency: " << cpu_freq << std::endl;
+	getInfo();
 
 	const int var_t = 1;					// VaR duration
 	const float var_per = 0.95f;				// 1-percentile
@@ -138,3 +127,66 @@ int main(int argc, char* argv[])
 	cout << "AVG EXECUTION TIME: " << exe_time / exp_times << " ms." << endl;
     return 0;
 }
+
+#if defined(WIN64)
+void getInfo() {
+	int cpuInfo[4] = { -1 };
+	char cpu_manufacture[32] = { 0 };
+	char cpu_type[32] = { 0 };
+	char cpu_freq[32] = { 0 };
+
+	__cpuid(cpuInfo, 0x80000002);
+	memcpy(cpu_manufacture, cpuInfo, sizeof(cpuInfo));
+
+	__cpuid(cpuInfo, 0x80000003);
+	memcpy(cpu_type, cpuInfo, sizeof(cpuInfo));
+
+	__cpuid(cpuInfo, 0x80000004);
+	memcpy(cpu_freq, cpuInfo, sizeof(cpuInfo));
+
+	cout << "CPU manufacture: " << cpu_manufacture << std::endl;
+	cout << "CPU type: " << cpu_type << std::endl;
+	cout << "CPU main frequency: " << cpu_freq << std::endl;
+}
+#elif defined(__linux__)
+void getInfo()
+{
+	FILE* fp = fopen("/proc/version", "r");
+	if (NULL == fp)
+		printf("failed to open version\n");
+	char szTest[1000] = { 0 };
+	while (!feof(fp))
+	{
+		memset(szTest, 0, sizeof(szTest));
+		fgets(szTest, sizeof(szTest) - 1, fp); // leave out \n  
+		printf("%s", szTest);
+	}
+	fclose(fp);
+
+	fp = fopen("/proc/cpuinfo", "r");
+	if (NULL == fp)
+		printf("failed to open cpuinfo\n");
+	char szTest[1000] = { 0 };
+	// read file line by line   
+	while (!feof(fp))
+	{
+		memset(szTest, 0, sizeof(szTest));
+		fgets(szTest, sizeof(szTest) - 1, fp); // leave out \n  
+		printf("%s", szTest);
+	}
+	fclose(fp);
+
+	fp = fopen("/proc/meminfo", "r");
+	if (NULL == fp)
+		printf("failed to open meminfo\n");
+	char szTest[1000] = { 0 };
+	while (!feof(fp))
+	{
+		memset(szTest, 0, sizeof(szTest));
+		fgets(szTest, sizeof(szTest) - 1, fp);
+		printf("%s", szTest);
+	}
+	fclose(fp);
+}
+#endif
+
