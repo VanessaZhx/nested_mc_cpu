@@ -168,22 +168,31 @@ double NestedMonteCarloVaR::execute() {
 	// ====================================================
 	//             Random number preperation
 	// ====================================================
+	/*
+	
+	*/
+	float *ext_rn = (float*)malloc((size_t)path_ext * sizeof(float));
+	rng->generate_sobol(ext_rn, var_t, path_ext);
+	rng->convert_normal(ext_rn, var_t * path_ext);
+
 	/* == BOND ==
 	** RN is used to move yield curve up/down, N~(0, sigma^2)
 	** [path_ext, 1]
 	*/
-	bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
-	rng->generate_sobol(bond_rn, 1, path_ext);
-	rng->convert_normal(bond_rn, path_ext, bond->sigma);
+	//bond_rn = (float*)malloc((size_t)path_ext * sizeof(float));
+	//rng->generate_sobol(bond_rn, 1, path_ext);
+	//rng->convert_normal(bond_rn, path_ext, bond->sigma);
+	bond_rn = ext_rn;
 
 	/* == STOCK ==
 	** RN is used as the external path
 	** For stock pricing only, there's no need to generate the inner path now
 	** [path_ext, var_t]
 	*/
-	stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
-	rng->generate_sobol(stock_rn, var_t, path_ext);
-	rng->convert_normal(stock_rn, var_t * path_ext);
+	//stock_rn = (float*)malloc((size_t)path_ext * sizeof(float));
+	//rng->generate_sobol(stock_rn, var_t, path_ext);
+	//rng->convert_normal(stock_rn, var_t * path_ext);
+	stock_rn = ext_rn;
 
 	/* == Basket Option ==
 	** Need two set of random numbers
@@ -197,12 +206,17 @@ double NestedMonteCarloVaR::execute() {
 	/*float* bskop_ext_rn = (float*)malloc((size_t)path_ext * bsk_n * sizeof(float));
 	rng->generate_sobol(bskop_ext_rn, bsk_n, path_ext);
 	rng->convert_normal(bskop_ext_rn, path_ext * bsk_n);*/
+	//float* bskop_ext_rn = ext_rn;
 
 	// Random number sequence for basket option(inner loop)
-	bskop_rn = (float*)malloc((size_t)path_ext * (path_int + 1) * bsk_n * sizeof(float));
+	/*bskop_rn = (float*)malloc((size_t)path_ext * (path_int + 1) * bsk_n * sizeof(float));
 	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * (path_int + 1) * bsk_n * sizeof(float));
 	rng->generate_sobol(bskop_tmp_rn, bsk_n, path_ext * (path_int + 1));
-	rng->convert_normal(bskop_tmp_rn, path_ext * (path_int + 1) * bsk_n);
+	rng->convert_normal(bskop_tmp_rn, path_ext * (path_int + 1) * bsk_n);*/
+	bskop_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
+	float* bskop_tmp_rn = (float*)malloc((size_t)path_ext * path_int * bsk_n * sizeof(float));
+	rng->generate_sobol(bskop_tmp_rn, bsk_n, path_ext * path_int);
+	rng->convert_normal(bskop_tmp_rn, path_ext * path_int * bsk_n);
 
 	// Covariance transformation
 	// A[n * n]*rn[n * (path_ext * path_int)]
@@ -210,7 +224,7 @@ double NestedMonteCarloVaR::execute() {
 		CblasNoTrans,
 		CblasTrans,
 		bsk_n,								// result row
-		path_ext * (path_int + 1),			// result col
+		path_ext * path_int,				// result col
 		bsk_n,								// length of "multiple by"
 		1,									// alpha
 		bskop->A,							// A
@@ -219,7 +233,7 @@ double NestedMonteCarloVaR::execute() {
 		bsk_n,								// col of B
 		0,									// beta
 		bskop_rn,							// C
-		path_ext * (path_int + 1)			// col of C
+		path_ext * path_int			// col of C
 	);
 
 	free(bskop_tmp_rn);
@@ -232,9 +246,10 @@ double NestedMonteCarloVaR::execute() {
 	** [path_ext, [path_int, steps]] => [path_ext * path_int, steps]
 	*/ 
 	// Random number sequence for barrier option(outer loop)
-	float* barop_ext_rn = (float*)malloc((size_t)path_ext * var_t * sizeof(float));
-	rng->generate_sobol(barop_ext_rn, var_t, path_ext);
-	rng->convert_normal(barop_ext_rn, path_ext * var_t);
+	//float* barop_ext_rn = (float*)malloc((size_t)path_ext * var_t * sizeof(float));
+	//rng->generate_sobol(barop_ext_rn, var_t, path_ext);
+	//rng->convert_normal(barop_ext_rn, path_ext * var_t);
+	//float* barop_ext_rn = ext_rn;
 
 	// Random number sequence for barrier option(inner loop)
 	barop_rn = (float*)malloc((size_t)path_ext * path_int * barop_t * sizeof(float));
@@ -311,10 +326,10 @@ double NestedMonteCarloVaR::execute() {
 		// will be used in inner as s0
 		for (int j = 0; j < bskop->n; j++) {
 			s = &(bskop->stocks[j]);
-			offset = j * (path_int + 1) * path_ext + i *(path_int + 1);
+			//offset = j * (path_int + 1) * path_ext + i *(path_int + 1);
 			bskop_stock_price[j] = s->s0
 				* exp((s->mu- 0.5f * s->var * s->var)* var_t 
-					+ s->var * sqrtf(float(var_t)) * bskop_rn[offset]);
+					+ s->var * sqrtf(float(var_t)) * ext_rn[i]);
 		}
 		
 		// Inner loop
@@ -323,7 +338,7 @@ double NestedMonteCarloVaR::execute() {
 		// random numbers[n][path_int]
 		for (int j = 0; j < bskop->n; j++) {
 			s = &(bskop->stocks[j]);
-			offset = j * (path_int + 1) * path_ext + i * (path_int + 1) + 1;
+			offset = j * path_int * path_ext + i * path_int;
 			for (int k = 0; k < path_int; k++) {
 				value_each[j * path_int + k] = s->x * 
 					bskop_stock_price[j] * exp((s->mu - 0.5f * s->var * s->var) * bskop_t
@@ -382,7 +397,7 @@ double NestedMonteCarloVaR::execute() {
 		// reprice underlying stocks
 		// will be used in inner as s0
 		barop_stock_price = s->s0 * exp((s->mu - 0.5f * s->var * s->var) * var_t
-				+ s->var * sqrtf(float(var_t)) * barop_ext_rn[i]);
+				+ s->var * sqrtf(float(var_t)) * ext_rn[i]);
 		// For consistancy with gpu implementation (calculate every path in parallel)
 		// So here we don't use early stop, just record the max
 		barop_max_price = barop_stock_price;
@@ -415,7 +430,7 @@ double NestedMonteCarloVaR::execute() {
 		// Get expected price at var_t
 		prices[row_idx * path_ext + i] = s->x * (call / path_int);
 	}
-	free(barop_ext_rn);
+	//free(barop_ext_rn);
 
 	// Reset
 	row_idx = 0;
@@ -503,11 +518,13 @@ double NestedMonteCarloVaR::execute() {
 
 	free(loss);
 	free(prices);
-	free(stock_rn);
+	
+	//free(stock_rn);
 	free(bskop_rn);
-	free(bond_rn);
+	//free(bond_rn);
 	free(barop_rn);
 	//delete(rng);
+	free(ext_rn);
 	
 	chrono::steady_clock::time_point end = chrono::steady_clock::now();
 	chrono::duration<double, std::milli> elapsed = end - start;
