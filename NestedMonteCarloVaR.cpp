@@ -312,6 +312,61 @@ double NestedMonteCarloVaR::execute() {
 
 
 
+	/* ====================
+	** == Barrier Option ==
+	** ==================== */
+	// Up-in-call
+	float barop_stock_price = 0.0f;		// Stock price at var_t
+	float barop_max_price = 0.0f;		// Max price throughout the path
+	float barop_price = 0.0f;			// option price at one step
+	float call = 0.0f;					// Accumulated price for a inner path
+	Stock* s;
+
+	for (int i = 0; i < path_ext; i++) {
+		s = barop->s;
+
+		// reprice underlying stocks
+		// will be used in inner as s0
+		barop_stock_price = s->s0 * exp((s->mu - 0.5f * s->var * s->var) * var_t
+			+ s->var * sqrtf(float(var_t)) * ext_rn[i]);
+		// For consistancy with gpu implementation (calculate every path in parallel)
+		// So here we don't use early stop, just record the max
+		barop_max_price = barop_stock_price;
+
+		// Inner loop
+		call = 0.0f;
+		for (int j = 0; j < path_int; j++) {
+			// Loop over steps in one path, get max price
+			for (int k = 0; k < barop_t; k++) {
+				// Calculate price at this step
+				barop_price = barop_stock_price * exp((s->mu - 0.5f * s->var * s->var) * k
+					+ s->var * sqrtf(float(k)) * barop_rn[i * path_int * barop_t + j * barop_t + k]);
+				
+				// Check maximum
+				if (barop_price > barop_max_price) {
+					barop_max_price = barop_price;
+				}
+			}
+			//cout << endl<< barop_price << endl;
+
+			// Compare with barrier, the option exists if max price is larger than barrier
+			if (barop_max_price > barop->h) {
+				// barop_price will be the last price
+				// max{St-K, 0}
+				//cout << barop_price - barop->k << endl;
+				call += (barop_price > barop->k) ? barop_price - barop->k : 0;
+			}
+		}
+		//cout << call << endl;
+
+		// Get expected price at var_t
+		prices[row_idx * path_ext + i] = s->x * (call / path_int);
+	}
+	//free(barop_ext_rn);
+	row_idx++;
+
+
+
 
 	/* ====================
 	** == Basket Option ==
@@ -319,7 +374,7 @@ double NestedMonteCarloVaR::execute() {
 	float* bskop_stock_price = (float*)malloc((size_t)bsk_n * sizeof(float));
 	float* value_each = (float*)malloc((size_t)path_int * bskop->n * sizeof(float));
 	float* value_weighted = (float*)malloc((size_t)path_int * sizeof(float));
-	Stock* s;
+	
 	int offset = 0;
 	for (int i = 0; i < path_ext; i++) {
 		// reprice underlying stocks
@@ -378,59 +433,7 @@ double NestedMonteCarloVaR::execute() {
 	free(value_each);
 	free(value_weighted);
 	free(bskop_stock_price);
-	row_idx++;
 
-
-
-	/* ====================
-	** == Barrier Option ==
-	** ==================== */
-	// Up-in-call
-	float barop_stock_price = 0.0f;		// Stock price at var_t
-	float barop_max_price = 0.0f;		// Max price throughout the path
-	float barop_price = 0.0f;			// option price at one step
-	float call = 0.0f;					// Accumulated price for a inner path
-
-	for (int i = 0; i < path_ext; i++) {
-		s = barop->s; 
-
-		// reprice underlying stocks
-		// will be used in inner as s0
-		barop_stock_price = s->s0 * exp((s->mu - 0.5f * s->var * s->var) * var_t
-				+ s->var * sqrtf(float(var_t)) * ext_rn[i]);
-		// For consistancy with gpu implementation (calculate every path in parallel)
-		// So here we don't use early stop, just record the max
-		barop_max_price = barop_stock_price;
-		
-		// Inner loop
-		call = 0.0f;
-		for (int j = 0; j < path_int; j++) {
-			// Loop over steps in one path, get max price
-			for (int k = 0; k < barop_t; k++) {
-				// Calculate price at this step
-				barop_price = barop_stock_price * exp((s->mu - 0.5f * s->var * s->var) * k
-					+ s->var * sqrtf(float(k)) * barop_rn[i * path_int * barop_t + j * barop_t + k]);
-				
-				// Check maximum
-				if (barop_price > barop_max_price) {
-					barop_max_price = barop_price;
-				}
-			}
-			//cout << endl<< barop_price << endl;
-
-			// Compare with barrier, the option exists if max price is larger than barrier
-			if (barop_max_price > barop->h) {
-				// barop_price will be the last price
-				// max{St-K, 0}
-				call += (barop_price > barop->k) ? barop_price - barop->k : 0;
-			}
-		}
-		//cout << call << endl;
-
-		// Get expected price at var_t
-		prices[row_idx * path_ext + i] = s->x * (call / path_int);
-	}
-	//free(barop_ext_rn);
 
 	// Reset
 	row_idx = 0;
@@ -497,7 +500,7 @@ double NestedMonteCarloVaR::execute() {
 	}
 	cout << endl;*/
 
-	//output_res(loss, path_ext);
+	output_res(loss, path_ext);
 
 
 	// ====================================================
@@ -535,7 +538,7 @@ double NestedMonteCarloVaR::execute() {
 void NestedMonteCarloVaR::output_res(float* data, int len) {
 		// open a file for outputting the matrix
 		ofstream outputfile;
-		outputfile.open("C:/Users/windows/Desktop/res.txt");
+		outputfile.open("res_cpu.txt");
 
 		// output the matrix to the file
 		if (outputfile.is_open()) {
