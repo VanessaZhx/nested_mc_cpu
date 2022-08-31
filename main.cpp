@@ -164,18 +164,18 @@ void getInfo()
 	}
 	fclose(fp);
 
-	//fp = fopen("/proc/cpuinfo", "r");
-	//if (NULL == fp)
-	//	printf("failed to open cpuinfo\n");
+	fp = fopen("/proc/cpuinfo", "r");
+    if (NULL == fp)
+		printf("failed to open cpuinfo\n");
 	//char szTest[1000] = { 0 };
-	//// read file line by line   
-	//while (!feof(fp))
-	//{
-	//	memset(szTest, 0, sizeof(szTest));
-	//	fgets(szTest, sizeof(szTest) - 1, fp); // leave out \n  
-	//	printf("%s", szTest);
-	//}
-	//fclose(fp);
+	// read file line by line   
+	while (!feof(fp))
+	{
+		memset(szTest, 0, sizeof(szTest));
+		fgets(szTest, sizeof(szTest) - 1, fp); // leave out \n  
+		printf("%s", szTest);
+	}
+	fclose(fp);
 
 	//fp = fopen("/proc/meminfo", "r");
 	//if (NULL == fp)
